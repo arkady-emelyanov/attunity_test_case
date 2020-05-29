@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
@@ -48,7 +49,7 @@ func getDatabase() (*sql.DB, error) {
 	return sql.Open("sqlserver", u.String())
 }
 
-func infiniteProducer() {
+func infiniteProducerWorker(workerId int) {
 	d, err := getDatabase()
 	if err != nil {
 		panic(err)
@@ -63,9 +64,9 @@ func infiniteProducer() {
 	bulkMaxArgs := 1000 // max: 1000
 	bulkCurrent := 0
 	bulkCounterVal := 0
-	bulkCounterMax := 100000
+	bulkCounterMax := 10000
 
-	fmt.Printf("Producing messages, startId=%d, hit Ctrl+C to stop...\n", startId)
+	fmt.Printf("[%d] Worker started...\n", workerId)
 	tt := time.Now()
 	for {
 		if bulkCurrent == bulkMaxArgs {
@@ -83,9 +84,17 @@ func infiniteProducer() {
 				panic(err)
 			}
 
-			took := time.Now().Sub(tt)
-			tt = time.Now()
-			fmt.Printf("Bulk=%d, took=%s\n", bulkCounterVal, took)
+			// print only each 100th batch
+			if (bulkCounterVal > 0) && (bulkCounterVal % 100 == 0) {
+				took := time.Now().Sub(tt)
+				tt = time.Now()
+				fmt.Printf("[%d] Bulk=%d, took=%s\n", workerId, bulkCounterVal, took)
+			}
+
+			// close statement
+			if err := stmt.Close(); err != nil {
+				panic(err)
+			}
 
 			bulkCurrent = 0
 			bulkArgs = nil
@@ -106,6 +115,23 @@ func infiniteProducer() {
 		bulkCurrent++
 		startId++
 	}
+}
+
+func infiniteProducer() {
+	var wg sync.WaitGroup
+
+	tt := time.Now()
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func(i int) {
+			infiniteProducerWorker(i)
+			wg.Done()
+		}(i)
+	}
+
+	fmt.Println("Load started, hit Ctrl+C to terminate...")
+	wg.Wait()
+	fmt.Printf("Load done, took=%s\n", time.Now().Sub(tt))
 }
 
 func main() {
