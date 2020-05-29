@@ -1,1 +1,4 @@
-Go post-processing script
+# Attunity Post-Processing script
+
+Command for capturing invocations of post-processing script
+ 

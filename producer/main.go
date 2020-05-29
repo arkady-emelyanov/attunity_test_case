@@ -18,10 +18,13 @@ var (
 	hostname = flag.String("hostname", "localhost", "MSSQL hostname")
 	database = flag.String("database", "test", "MSSQL database")
 	username = flag.String("username", "sa", "MSSQL User")
+
+	// NOT: default password is for MS SQL testing container and NOT for real system.
 	password = flag.String("password", "1234abc7643Z", "MSSQL Password")
-	port     = flag.Int("port", 1433, "MSSQL Port")
-	help     = flag.Bool("help", false, "Display help")
-	mode     = flag.String("mode", "inf", "Run mode")
+
+	port = flag.Int("port", 1433, "MSSQL Port")
+	help = flag.Bool("help", false, "Display help")
+	mode = flag.String("mode", "inf", "Run mode")
 )
 
 const (
