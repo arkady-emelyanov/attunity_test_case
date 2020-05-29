@@ -15,18 +15,18 @@ func main() {
 	}
 
 	headerLine := fmt.Sprintf("###### Run: %s\n", time.Now())
-	fp.WriteString(headerLine)
+	_, _ = fp.WriteString(headerLine)
 
 	argsLine := fmt.Sprintf("> Args: %s\n", strings.Join(os.Args, " "))
-	fp.WriteString(argsLine)
+	_, _ = fp.WriteString(argsLine)
 
 	envSlice := os.Environ()
 	for _, s := range envSlice {
 		envLine := fmt.Sprintf("> %s\n", s)
-		fp.WriteString(envLine)
+		_, _ = fp.WriteString(envLine)
 	}
 
-	fp.WriteString("\n\n")
-	fp.Sync()
-	fp.Close()
+	_, _ = fp.WriteString("\n\n")
+	_ = fp.Sync()
+	_ = fp.Close()
 }
