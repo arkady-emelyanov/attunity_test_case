@@ -24,6 +24,11 @@ var (
 	mode     = flag.String("mode", "inf", "Run mode")
 )
 
+const (
+	bulkMaxArgs    = 1000  // number of arguments for MS SQL batch
+	bulkCounterMax = 10000 // number of batches to perform for each worker
+)
+
 func randomString(n int) string {
 	letters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	b := make([]byte, n)
@@ -49,7 +54,7 @@ func getDatabase() (*sql.DB, error) {
 	return sql.Open("sqlserver", u.String())
 }
 
-func infiniteProducerWorker(workerId int) {
+func infiniteProducerWorker(workerId int, startId int) {
 	d, err := getDatabase()
 	if err != nil {
 		panic(err)
@@ -60,32 +65,30 @@ func infiniteProducerWorker(workerId int) {
 	var bulkArgs []interface{}
 	var bulkVals []string
 
-	startId := 0
-	bulkMaxArgs := 1000 // max: 1000
+	bulkPosArgsCounter := 0
 	bulkCurrent := 0
 	bulkCounterVal := 0
-	bulkCounterMax := 10000
 
 	fmt.Printf("[%d] Worker started...\n", workerId)
 	tt := time.Now()
 	for {
 		if bulkCurrent == bulkMaxArgs {
 			// prepare statement
-			stmt, err := d.Prepare(
-				fmt.Sprintf(`INSERT INTO test_bulk_load (ID, NAME) VALUES %s`,
-					strings.Join(bulkVals, ","),
-				),
+			sqlInsert := fmt.Sprintf(`INSERT INTO test_bulk_load (ID, NAME) VALUES %s`,
+				strings.Join(bulkVals, ","),
 			)
+			stmt, err := d.Prepare(sqlInsert)
 			if err != nil {
 				panic(err)
 			}
+
 			// execute it
 			if _, err := stmt.Exec(bulkArgs...); err != nil {
 				panic(err)
 			}
 
-			// print only each 100th batch
-			if (bulkCounterVal > 0) && (bulkCounterVal % 100 == 0) {
+			// report only each 100th batch
+			if (bulkCounterVal > 0) && (bulkCounterVal%100 == 0) {
 				took := time.Now().Sub(tt)
 				tt = time.Now()
 				fmt.Printf("[%d] Bulk=%d, took=%s\n", workerId, bulkCounterVal, took)
@@ -96,9 +99,13 @@ func infiniteProducerWorker(workerId int) {
 				panic(err)
 			}
 
+			// reset memory
 			bulkCurrent = 0
 			bulkArgs = nil
 			bulkVals = nil
+			bulkPosArgsCounter = 0
+
+			// increase current bulk load
 			bulkCounterVal++
 		}
 
@@ -110,9 +117,12 @@ func infiniteProducerWorker(workerId int) {
 		name := randomString(49)
 		bulkArgs = append(bulkArgs, startId)
 		bulkArgs = append(bulkArgs, name)
-		bulkVals = append(bulkVals, "(@p1, @p2)")
+
+		argPos := fmt.Sprintf("(@p%d, @p%d)", bulkPosArgsCounter+1, bulkPosArgsCounter+2)
+		bulkVals = append(bulkVals, argPos)
 
 		bulkCurrent++
+		bulkPosArgsCounter += 2
 		startId++
 	}
 }
@@ -124,7 +134,8 @@ func infiniteProducer() {
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
 		go func(i int) {
-			infiniteProducerWorker(i)
+			nextStartId := i*bulkMaxArgs*bulkCounterMax + 1
+			infiniteProducerWorker(i, nextStartId)
 			wg.Done()
 		}(i)
 	}
