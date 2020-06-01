@@ -18,7 +18,7 @@ const (
 	bulkMaxArgs    = 1000  // number of arguments for MS SQL batch
 	bulkCounterMax = 10000 // number of batches to perform for each worker
 
-	changingDelay = time.Minute * 5
+	changingDelay = time.Minute * 3
 )
 
 const (

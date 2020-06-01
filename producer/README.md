@@ -14,10 +14,22 @@ create table test_bulk_load (
 
 ## Changing bulk load
 
+Enable SQL server CDC
+```
+EXEC sys.sp_cdc_enable_db
+```
+
+Enable Store Changes replication:
+```
+When you click Store Changes in the Task Settings dialog box, 
+you can configure the Store Changes Settings for a replication task.
+Store changes processing is ON/OFF
+```
+
 Target table DDL:
 ```
 create table test_changing_load (
-    id int, 
+    id int primary key, 
     name varchar(50)
 )
 ```
