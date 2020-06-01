@@ -28,3 +28,6 @@ batch = get_batch(
     src_path_override=SOURCE_PATH
 )
 print(f">>> Batch loaded, num_files={len(batch.files)}, records={batch.record_count}")
+
+spark = get_spark()
+print(spark)

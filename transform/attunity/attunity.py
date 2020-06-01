@@ -15,7 +15,7 @@ class Batch:
 
 
 def get_batch(dfm_files: List[str], src_path_override: str) -> Batch:
-    print(">>> Get batches")
+    print(">>> Loading batch metadata")
 
     df_columns = None
     df_files = []
@@ -37,7 +37,6 @@ def get_batch(dfm_files: List[str], src_path_override: str) -> Batch:
         columns = obj['dataInfo']['columns']
         if df_columns is None:
             df_columns = columns
-            continue
 
         # validate current columns and firstColumns
         if columns != df_columns:
