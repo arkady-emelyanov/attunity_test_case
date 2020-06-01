@@ -14,6 +14,18 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 )
 
+const (
+	bulkMaxArgs    = 1000  // number of arguments for MS SQL batch
+	bulkCounterMax = 10000 // number of batches to perform for each worker
+
+	changingDelay = time.Minute * 5
+)
+
+const (
+	modeBulk     = "bulk"
+	modeChanging = "change"
+)
+
 var (
 	hostname = flag.String("hostname", "localhost", "MSSQL hostname")
 	database = flag.String("database", "test", "MSSQL database")
@@ -24,12 +36,7 @@ var (
 
 	port = flag.Int("port", 1433, "MSSQL Port")
 	help = flag.Bool("help", false, "Display help")
-	mode = flag.String("mode", "inf", "Run mode")
-)
-
-const (
-	bulkMaxArgs    = 1000  // number of arguments for MS SQL batch
-	bulkCounterMax = 10000 // number of batches to perform for each worker
+	mode = flag.String("mode", modeChanging, "Run mode")
 )
 
 func randomString(n int) string {
@@ -63,7 +70,6 @@ func infiniteProducerWorker(workerId int, startId int) {
 		panic(err)
 	}
 
-	// create table test_bulk_load (id int, name varchar(50))
 	// start loading data
 	var bulkArgs []interface{}
 	var bulkVals []string
@@ -130,6 +136,7 @@ func infiniteProducerWorker(workerId int, startId int) {
 	}
 }
 
+// To run this scenario: `create table test_bulk_load (id int, name varchar(50))`
 func infiniteProducer() {
 	var wg sync.WaitGroup
 
@@ -148,6 +155,98 @@ func infiniteProducer() {
 	fmt.Printf("Load done, took=%s\n", time.Now().Sub(tt))
 }
 
+func insertSmallDataBulk(d *sql.DB, smallBulkData [][]interface{}) {
+	stmt, err := d.Prepare("INSERT INTO test_changing_load (id, name) VALUES (@p1, @p2)")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("> Inserting small data bulk...")
+	for _, args := range smallBulkData {
+		if _, err := stmt.Exec(args...); err != nil {
+			panic(err)
+		}
+	}
+
+	_ = stmt.Close()
+	fmt.Printf("> Data inserted, waiting for: %s\n", changingDelay)
+	time.Sleep(changingDelay)
+}
+
+func updateSmallDataBulk(d *sql.DB, smallBulkData [][]interface{}) {
+	stmt, err := d.Prepare("UPDATE test_changing_load SET name = @p2 WHERE id = @p1")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("> Updating small data bulk...")
+	for _, args := range smallBulkData {
+		if _, err := stmt.Exec(args...); err != nil {
+			panic(err)
+		}
+	}
+
+	_ = stmt.Close()
+	fmt.Printf("> Data updated, waiting for: %s\n", changingDelay)
+	time.Sleep(changingDelay)
+}
+
+func deleteSmallDataBulk(d *sql.DB, smallBulkData []interface{}) {
+	stmt, err := d.Prepare("DELETE FROM test_changing_load WHERE id = @p1")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("> Deleting small data bulk...")
+	for _, arg := range smallBulkData {
+		if _, err := stmt.Exec(arg); err != nil {
+			panic(err)
+		}
+	}
+
+	_ = stmt.Close()
+	fmt.Printf("> Data deleted, waiting for: %s\n", changingDelay)
+	time.Sleep(changingDelay)
+}
+
+// To run this scenario: `create table test_changing_load (id int, name varchar(50))`
+func changingProducer() {
+	d, err := getDatabase()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("> Starting changing producer...")
+
+	// INSERT small bulk of data and wait for 3 minutes
+	insertSmallDataBulk(d, [][]interface{}{
+		{1, "number_one"},
+		{2, "number_two"},
+		{3, "number_three"},
+		{4, "number_four"},
+		{5, "number_five"},
+	})
+
+	// UPDATE one record and wait for 3 minutes
+	updateSmallDataBulk(d, [][]interface{}{
+		{1, "number_one_changed"},
+		{5, "number_five_changed"},
+	})
+
+	// DELETE one record and wait for 3 minutes
+	deleteSmallDataBulk(d, []interface{}{
+		2,
+	})
+
+	// INSERT one record and wait for 3 minutes
+	insertSmallDataBulk(d, [][]interface{}{
+		{6, "number_six"},
+		{7, "number_six"},
+	})
+
+	fmt.Println("> Finished changing producer.")
+}
+
 func main() {
 	flag.Parse()
 	if *help {
@@ -157,8 +256,11 @@ func main() {
 
 	// mode
 	switch *mode {
-	case "inf":
+	case modeBulk:
 		infiniteProducer()
+
+	case modeChanging:
+		changingProducer()
 
 	default:
 		fmt.Printf("Unknown mode: %s\n", *mode)
