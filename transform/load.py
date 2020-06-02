@@ -55,7 +55,6 @@ df.show(10)
 print(f">>> Writing delta table to: {cmd_args.delta_path}...")
 df.write \
     .format("delta") \
-    .mode("overwrite") \
     .save(cmd_args.delta_path)
 
 # 7. done
