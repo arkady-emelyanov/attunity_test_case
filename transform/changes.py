@@ -89,6 +89,8 @@ delta_table = get_delta_table(spark, cmd_args.delta_path)
 # 7. Apply changes
 # @see: https://docs.delta.io/latest/delta-update.html#write-change-data-into-a-delta-table
 print(f">>> Applying changes to target delta table...")
+
+# grab only meaning columns, skip the rest
 value_map = {}
 for col in batch.columns:
     dst = col['name']
@@ -96,6 +98,7 @@ for col in batch.columns:
         src = f"s.{dst}"
         value_map[dst] = src
 
+# apply changes back to delta table
 delta_table \
     .alias("t") \
     .merge(latest_changes_df.alias("s"), f"s.{pkey} = t.{pkey}") \
