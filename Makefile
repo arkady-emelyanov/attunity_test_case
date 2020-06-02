@@ -11,6 +11,7 @@ build:
 ## spark story
 TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
 DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
+DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.jar"
 
 ## working on single table
 TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/dbo.WRKFLW_INSTNC"
@@ -23,19 +24,28 @@ load:
 	@echo "### Performing initial delta table creation..."
 	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
 	@spark-submit ./transform/load.py \
+		--delta-library-jar $(DELTA_LIBRARY_JAR) \
 		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH)
+		--load-path $(TABLE_LOAD_PATH) \
+		--changes-path $(TABLE_CHANGES_PATH) \
+		--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: changes
 changes:
 	@echo "### Applying delta table changes..."
 	@spark-submit ./transform/changes.py \
+		--delta-library-jar $(DELTA_LIBRARY_JAR) \
 		--delta-path $(TABLE_DELTA_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH)
+		--load-path $(TABLE_LOAD_PATH) \
+		--changes-path $(TABLE_CHANGES_PATH) \
+		--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: snapshot
 snapshot:
 	@echo "### Performing delta table point-in-time snapshot..."
 	@spark-submit ./transform/snapshot.py \
+		--delta-library-jar $(DELTA_LIBRARY_JAR) \
 		--delta-path $(TABLE_DELTA_PATH) \
+		--load-path $(TABLE_LOAD_PATH) \
+		--changes-path $(TABLE_CHANGES_PATH) \
 		--snapshot-path $(TABLE_SNAPSHOT_PATH)

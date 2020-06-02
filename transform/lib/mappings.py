@@ -8,6 +8,7 @@ TYPE_MAPPINGS = {
     "STRING": StringType,
     "WSTRING": StringType,
     "BOOLEAN": BooleanType,
+    "BYTES": BinaryType,
 }
 
 

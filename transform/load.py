@@ -1,35 +1,23 @@
-import argparse
 import sys
-import os.path
-
 from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType
 
 from lib.constants import DATETIME_FORMAT
+from lib.helpers import get_spark, get_args
 from lib.mappings import get_schema_type
-from lib.batch_metadata import get_batch_metadata
-from helpers import get_spark
+from lib.metadata import get_batch_metadata, get_metadata_file_list
 
-# 0. parse arguments
-arg_parser = argparse.ArgumentParser()
-arg_parser.add_argument("-l", "--load-path", required=True, help="Table load path")
-arg_parser.add_argument("-d", "--delta-path", required=True, help="Delta table path")
-cmd_args = arg_parser.parse_args()
+cmd_args = get_args()
 
 # 1. list files, "load" type only
-print(f">>> Searching for dfm in: {cmd_args.load_path}...")
-dfm_files = []
-for s in os.listdir(cmd_args.load_path):
-    if s.startswith("LOAD") and s.endswith(".dfm"):
-        dfm_files.append(os.path.join(cmd_args.load_path, s))
-
+print(f">>> Searching for batch metadata files in: {cmd_args.load_path}...")
+dfm_files = get_metadata_file_list(cmd_args.load_path, prefix="LOAD")
 if not dfm_files:
     print(">>> Nothing to-do, exiting...")
     sys.exit(0)
-else:
-    print(f">>> Found {len(dfm_files)} load dfm files")
 
 # 2. get batch and validate columns
+print(f">>> Found {len(dfm_files)} batch metadata files, loading metadata...")
 batch = get_batch_metadata(
     dfm_files=dfm_files,
     src_path_override=cmd_args.load_path
@@ -44,7 +32,7 @@ schema = StructType()
 for col in batch.columns:
     schema.add(col['name'], get_schema_type(col['type']))
 
-# 4. produce initial parquet
+# 4. load batch
 print(f">>> Loading batch...")
 spark = get_spark()
 txt_files = spark.sparkContext.textFile(",".join(batch.files))

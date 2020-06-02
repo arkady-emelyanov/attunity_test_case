@@ -23,9 +23,20 @@ class BatchMetadata:
         self.primary_key_columns.sort(key=lambda x: int(col['primaryKeyPos']))
 
 
-def get_batch_metadata(dfm_files: List[str], src_path_override: str) -> BatchMetadata:
-    print(">>> Loading batch metadata...")
+def get_metadata_file_list(search_path: str, prefix: str = "", suffix: str = ".dfm") -> List[str]:
+    dfm_files = []
+    for s in os.listdir(search_path):
+        if prefix and not s.startswith(prefix):
+            print(f"> Prefix is set: {prefix}, but {s} doesn't contain it, skipping...")
+            continue
+        if suffix and not s.endswith(suffix):
+            print(f"> Suffix is set: {suffix}, but {s} doesn't contain it, skipping...")
+            continue
+        dfm_files.append(os.path.join(search_path, s))
+    return dfm_files
 
+
+def get_batch_metadata(dfm_files: List[str], src_path_override: str) -> BatchMetadata:
     df_columns = None
     df_files = []
     df_record_count = 0
