@@ -1,8 +1,5 @@
 import argparse
 
-from pyspark.conf import SparkConf
-from pyspark.sql import SparkSession
-
 
 def get_args() -> argparse.Namespace:
     arg_parser = argparse.ArgumentParser()
@@ -13,10 +10,3 @@ def get_args() -> argparse.Namespace:
     arg_parser.add_argument("-d", "--delta-path", required=True, help="Delta table path")
     cmd_args, _ = arg_parser.parse_known_args()
     return cmd_args
-
-
-def get_spark() -> SparkSession:
-    return SparkSession. \
-        builder \
-        .config(conf=SparkConf()) \
-        .getOrCreate()

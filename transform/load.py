@@ -2,10 +2,11 @@ import sys
 from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType
 
+from lib.args import get_args
 from lib.constants import DATETIME_FORMAT
-from lib.helpers import get_spark, get_args
 from lib.mappings import get_schema_type
 from lib.metadata import get_batch_metadata, get_metadata_file_list
+from lib.spark import get_spark
 
 cmd_args = get_args()
 

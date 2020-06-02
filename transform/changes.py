@@ -2,10 +2,11 @@ import sys
 from pyspark.sql.functions import max as sql_max
 from pyspark.sql.types import StructType
 
+from lib.args import get_args
 from lib.constants import CHANGES_METADATA_FIELD_PREFIX, CHANGES_METADATA_OPERATION
-from lib.helpers import get_spark, get_args
 from lib.mappings import get_schema_type
 from lib.metadata import get_batch_metadata, get_metadata_file_list
+from lib.spark import get_spark
 from lib.table import get_delta_table
 
 # 0. parse arguments

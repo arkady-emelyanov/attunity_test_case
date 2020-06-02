@@ -1,7 +1,6 @@
-import argparse
-
-from .helpers import get_args
 from pyspark.sql import SparkSession
+
+from .args import get_args
 
 
 def get_delta_table(spark: SparkSession, delta_path: str):

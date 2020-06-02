@@ -21,10 +21,14 @@ TABLE_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)__ct"
 TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__delta"
 TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__snapshot"
 
-.PHONY: load
-load:
-	@echo "### Performing initial delta table creation..."
+.PHONY: clean
+clean:
+	@echo "### Clearing up $(DELTA_BASE_STORAGE)"
 	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
+
+.PHONY: load
+load: clean
+	@echo "### Performing initial delta table load..."
 	@spark-submit ./transform/load.py \
 		--delta-library-jar $(DELTA_LIBRARY_JAR) \
 		--delta-path $(TABLE_DELTA_PATH) \
@@ -34,7 +38,7 @@ load:
 
 .PHONY: changes
 changes:
-	@echo "### Applying delta table changes..."
+	@echo "### Processing incremental delta table changes..."
 	@spark-submit ./transform/changes.py \
 		--delta-library-jar $(DELTA_LIBRARY_JAR) \
 		--delta-path $(TABLE_DELTA_PATH) \
@@ -44,7 +48,7 @@ changes:
 
 .PHONY: snapshot
 snapshot:
-	@echo "### Performing delta table point-in-time snapshot..."
+	@echo "### Performing delta table snapshot..."
 	@spark-submit ./transform/snapshot.py \
 		--delta-library-jar $(DELTA_LIBRARY_JAR) \
 		--delta-path $(TABLE_DELTA_PATH) \

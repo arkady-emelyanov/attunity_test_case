@@ -1,4 +1,5 @@
-from lib.helpers import get_spark, get_args
+from lib.args import get_args
+from lib.spark import get_spark
 
 cmd_args = get_args()
 spark = get_spark()
