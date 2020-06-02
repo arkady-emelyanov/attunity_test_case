@@ -1,3 +1,5 @@
+## attunity story
+
 .PHONY: mssql
 mssql:
 	docker exec -it mssql /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '1234abc7643Z'
@@ -13,10 +15,8 @@ build:
 pload:
 	rm -rf /Users/arkady/Projects/disney/spark_data/out
 	mkdir -p /Users/arkady/Projects/disney/spark_data/out
-	python3 ./transform/processing_load.py
+	spark-submit ./transform/processing_load.py
 
 .PHONY: pchanges
 pchanges:
-	rm -rf /Users/arkady/Projects/disney/spark_data/out
-	mkdir -p /Users/arkady/Projects/disney/spark_data/out
-	python3 ./transform/processing_changes.py
+	spark-submit ./transform/processing_changes.py

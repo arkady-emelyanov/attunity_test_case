@@ -7,8 +7,8 @@ from helpers import get_spark
 from attunity.attunity import get_batch
 from attunity.mappings import get_type
 
-SOURCE_PATH = "/Users/arkady/Projects/disney/spark_data/dbo.test_changing_load__ct"
-OUTPUT_PATH = "/Users/arkady/Projects/disney/spark_data/out/dbo.test_changing_load"
+SOURCE_PATH = "/Users/arkady/Projects/disney/spark_data/dbo.WRKFLW_INSTNC__ct"
+DELTA_TABLE = "/Users/arkady/Projects/disney/spark_data/out/WRKFLW_INSTNC"
 PREFIX_SKIP = "header__"
 
 # 1. list files, "load" type only
@@ -29,5 +29,10 @@ batch = get_batch(
 )
 print(f">>> Batch loaded, num_files={len(batch.files)}, records={batch.record_count}")
 
+# 3. define schema
+
+# 4. divide updates/deletes into different data frames
+
+# 5. apply changes to delta table
 spark = get_spark()
 print(spark)
