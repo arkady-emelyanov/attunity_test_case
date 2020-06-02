@@ -50,7 +50,7 @@ spark = get_spark()
 txt_files = spark.sparkContext.textFile(",".join(batch.files))
 df = spark.read.json(txt_files, schema=schema)
 
-# post-process fields
+# 5. post-process fields
 print(f">>> Post-processing columns...")
 for col in batch.columns:
     if col['type'] == "DATETIME":
@@ -62,12 +62,12 @@ for col in batch.columns:
 
 df.show(10, False)
 
-# 5. creating a table
+# 6. creating a table
 print(f">>> Writing delta table to: {cmd_args.delta_path}...")
 df.write \
     .format("delta") \
     .mode("overwrite") \
     .save(cmd_args.delta_path)
 
-# 6. done
+# 7. done
 print(">>> Done!")
