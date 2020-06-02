@@ -4,8 +4,8 @@ import sys
 from pyspark.sql.types import StructType
 
 from helpers import get_spark
-from attunity.attunity import get_batch
-from attunity.mappings import get_type
+from attunity.batch_metadata import get_batch_metadata
+from attunity.mappings import get_schema_type
 
 SOURCE_PATH = "/Users/arkady/Projects/disney/spark_data/dbo.WRKFLW_INSTNC__ct"
 DELTA_TABLE = "/Users/arkady/Projects/disney/spark_data/out/WRKFLW_INSTNC"
@@ -23,11 +23,13 @@ if not dfm_files:
     sys.exit(0)
 
 # 2. get batch and validate columns
-batch = get_batch(
+batch = get_batch_metadata(
     dfm_files=dfm_files,
     src_path_override=SOURCE_PATH
 )
-print(f">>> Batch loaded, num_files={len(batch.files)}, records={batch.record_count}")
+print(f">>> Batch metadata loaded, num_files={len(batch.files)}, records={batch.record_count}")
+if not batch.files:
+    raise Exception("Did not found any files to load..")
 
 # 3. define schema
 

@@ -1,21 +1,30 @@
 import os.path
-
 import sys
+import argparse
+
 from pyspark.sql.types import StructType
 
 from helpers import get_spark
-from attunity.attunity import get_batch
-from attunity.mappings import get_type
+from attunity.batch_metadata import get_batch_metadata
+from attunity.mappings import get_schema_type
 
-SOURCE_PATH = "/Users/arkady/Projects/disney/spark_data/dbo.WRKFLW_INSTNC"
-DELTA_TABLE = "/Users/arkady/Projects/disney/spark_data/out/WRKFLW_INSTNC"
+# 0. parse arguments
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument("-l", "--load-path", required=True, help="Table load path")
+arg_parser.add_argument("-d", "--delta-path", required=True, help="Delta table path")
+cmd_args = arg_parser.parse_args()
+
+# 0. print arguments
+print(">>> Running with command-line arguments:")
+print(f"> Load path: {cmd_args.load_path}")
+print(f"> Delta path: {cmd_args.delta_path}")
 
 # 1. list files, "load" type only
-print(">>> Searching for load dfm files...")
+print(f">>> Searching for dfm in: {cmd_args.load_path}")
 dfm_files = []
-for s in os.listdir(SOURCE_PATH):
+for s in os.listdir(cmd_args.load_path):
     if s.startswith("LOAD") and s.endswith(".dfm"):
-        dfm_files.append(os.path.join(SOURCE_PATH, s))
+        dfm_files.append(os.path.join(cmd_args.load_path, s))
 
 if not dfm_files:
     print(">>> Nothing to-do, exiting...")
@@ -24,18 +33,19 @@ else:
     print(f">>> Found {len(dfm_files)} load dfm files")
 
 # 2. get batch and validate columns
-batch = get_batch(
+batch = get_batch_metadata(
     dfm_files=dfm_files,
-    src_path_override=SOURCE_PATH
+    src_path_override=cmd_args.load_path
 )
-print(f">>> Batch loaded, num_files={len(batch.files)}, records={batch.record_count}")
+print(f">>> Batch metadata loaded, num_files={len(batch.files)}, records={batch.record_count}")
 if not batch.files:
     raise Exception("Did not found any files to load..")
 
 # 3. define schema
+print(">>> Setting up DataFrame schema")
 schema = StructType()
 for col in batch.columns:
-    schema.add(col['name'], get_type(col['type']))
+    schema.add(col['name'], get_schema_type(col['type']))
 
 # 4. produce initial parquet
 print(f">>> Loading batch...")
@@ -45,8 +55,8 @@ df = spark.read.json(txt_files, schema=schema)
 df.show(10)
 
 # 5. creating a table
-print(f">>> Writing Delta table...")
-df.write.format("delta").save(DELTA_TABLE)
+print(f">>> Writing delta table to: {cmd_args.delta_path}")
+df.write.format("delta").save(cmd_args.delta_path)
 
 # 6. done
 print(">>> Done!")
