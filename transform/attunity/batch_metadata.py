@@ -24,7 +24,7 @@ class BatchMetadata:
 
 
 def get_batch_metadata(dfm_files: List[str], src_path_override: str) -> BatchMetadata:
-    print(">>> Loading batch metadata")
+    print(">>> Loading batch metadata...")
 
     df_columns = None
     df_files = []

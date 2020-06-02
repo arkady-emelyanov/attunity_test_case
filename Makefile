@@ -12,18 +12,30 @@ build:
 TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
 DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
 
-# table "dbo.WRKFLW_INSTNC"
+## working on single table
 TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/dbo.WRKFLW_INSTNC"
 TABLE_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/dbo.WRKFLW_INSTNC__ct"
-TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/WRKFLW_INSTNC"
+TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/WRKFLW_INSTNC__delta"
+TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/WRKFLW_INSTNC__snapshot"
 
-.PHONY: pload
-pload:
+.PHONY: load
+load:
+	@echo "### Performing initial delta creation"
 	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
-	@spark-submit ./transform/processing_load.py \
-		-l $(TABLE_LOAD_PATH) \
-		-d $(TABLE_DELTA_PATH)
+	@spark-submit ./transform/load.py \
+		--delta-path $(TABLE_DELTA_PATH) \
+		--load-path $(TABLE_LOAD_PATH)
 
-.PHONY: pchanges
-pchanges:
-	@spark-submit ./transform/processing_changes.py
+.PHONY: changes
+changes:
+	@echo "### Applying delta table changes"
+	@spark-submit ./transform/changes.py \
+		--delta-path $(TABLE_DELTA_PATH) \
+		--changes-path $(TABLE_CHANGES_PATH)
+
+.PHONY: snapshot
+snapshot:
+	@echo "### Performing point-in-time snapshot"
+	@spark-submit ./transform/snapshot.py \
+		--delta-path $(TABLE_DELTA_PATH) \
+		--snapshot-path $(TABLE_SNAPSHOT_PATH)

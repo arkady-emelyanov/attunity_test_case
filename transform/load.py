@@ -14,13 +14,8 @@ arg_parser.add_argument("-l", "--load-path", required=True, help="Table load pat
 arg_parser.add_argument("-d", "--delta-path", required=True, help="Delta table path")
 cmd_args = arg_parser.parse_args()
 
-# 0. print arguments
-print(">>> Running with command-line arguments:")
-print(f"> Load path: {cmd_args.load_path}")
-print(f"> Delta path: {cmd_args.delta_path}")
-
 # 1. list files, "load" type only
-print(f">>> Searching for dfm in: {cmd_args.load_path}")
+print(f">>> Searching for dfm in: {cmd_args.load_path}...")
 dfm_files = []
 for s in os.listdir(cmd_args.load_path):
     if s.startswith("LOAD") and s.endswith(".dfm"):
@@ -37,12 +32,12 @@ batch = get_batch_metadata(
     dfm_files=dfm_files,
     src_path_override=cmd_args.load_path
 )
-print(f">>> Batch metadata loaded, num_files={len(batch.files)}, records={batch.record_count}")
+print(f">>> Metadata loaded, num_files={len(batch.files)}, records={batch.record_count}")
 if not batch.files:
     raise Exception("Did not found any files to load..")
 
 # 3. define schema
-print(">>> Setting up DataFrame schema")
+print(">>> Setting up DataFrame schema...")
 schema = StructType()
 for col in batch.columns:
     schema.add(col['name'], get_schema_type(col['type']))
@@ -55,7 +50,7 @@ df = spark.read.json(txt_files, schema=schema)
 df.show(10)
 
 # 5. creating a table
-print(f">>> Writing delta table to: {cmd_args.delta_path}")
+print(f">>> Writing delta table to: {cmd_args.delta_path}...")
 df.write.format("delta").save(cmd_args.delta_path)
 
 # 6. done

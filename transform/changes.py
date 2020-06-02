@@ -7,6 +7,11 @@ from helpers import get_spark
 from attunity.batch_metadata import get_batch_metadata
 from attunity.mappings import get_schema_type
 
+# Load batch
+# Collect changes as separate DataFrames: insert, delete and update
+# Load delta table
+# Apply delta changes: https://docs.delta.io/0.4.0/delta-update.html#write-change-data-into-a-delta-table
+
 SOURCE_PATH = "/Users/arkady/Projects/disney/spark_data/dbo.WRKFLW_INSTNC__ct"
 DELTA_TABLE = "/Users/arkady/Projects/disney/spark_data/out/WRKFLW_INSTNC"
 PREFIX_SKIP = "header__"
