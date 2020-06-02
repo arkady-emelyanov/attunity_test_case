@@ -47,12 +47,17 @@ batch_df = batch_df.filter(
     (batch_df[CHANGES_METADATA_OPERATION] == "I") |
     (batch_df[CHANGES_METADATA_OPERATION] == "D")
 )
+
+# TODO: sort by header__timestamp
 print(f">>> Collected {batch_df.count()} distinct changes")
+batch_df.show(10, False)
 
 # 5. Transform Qlik changes into DeltaLake expected changes
 print(f">>> Transforming collected changes into DeltaLake compatible DataFrame...")
+# TODO: drop header__ fields
 
 # 6. Load delta table
+# TODO: check delta table existence, if doesn't exist, create new
 print(f">>> Loading delta table from {cmd_args.delta_path}...")
 delta_table = get_delta_table(spark, cmd_args.delta_path)
 

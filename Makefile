@@ -14,10 +14,12 @@ DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
 DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.jar"
 
 ## working on single table
-TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/dbo.WRKFLW_INSTNC"
-TABLE_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/dbo.WRKFLW_INSTNC__ct"
-TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/WRKFLW_INSTNC__delta"
-TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/WRKFLW_INSTNC__snapshot"
+#TABLE_NAME := "dbo.WRKFLW_INSTNC"
+TABLE_NAME := "dbo.test_changing_load"
+TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)"
+TABLE_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)__ct"
+TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__delta"
+TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__snapshot"
 
 .PHONY: load
 load:
