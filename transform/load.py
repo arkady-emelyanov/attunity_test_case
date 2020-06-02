@@ -50,8 +50,6 @@ for col in batch.columns:
             .drop(src_field) \
             .withColumnRenamed(tmp_field, src_field)
 
-df.show(10)
-
 # 6. creating a table
 print(f">>> Writing delta table to: {cmd_args.delta_path}...")
 df.write \

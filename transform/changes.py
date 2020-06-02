@@ -81,7 +81,6 @@ latest_changes_df = batch_df \
     .drop(*metadata_columns)
 
 print(f">>> Collected {latest_changes_df.count()} changes after compaction")
-latest_changes_df.show(10)
 
 # 6. Load delta table
 print(f">>> Loading delta table from {cmd_args.delta_path}...")
