@@ -87,7 +87,7 @@ print(f">>> Loading delta table from {cmd_args.delta_path}...")
 delta_table = get_delta_table(spark, cmd_args.delta_path)
 
 # 7. Apply changes
-# @see: https://docs.delta.io/0.4.0/delta-update.html#write-change-data-into-a-delta-table
+# @see: https://docs.delta.io/latest/delta-update.html#write-change-data-into-a-delta-table
 print(f">>> Applying changes to target delta table...")
 value_map = {}
 for col in batch.columns:
