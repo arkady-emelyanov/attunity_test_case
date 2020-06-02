@@ -20,7 +20,7 @@ TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/WRKFLW_INSTNC__snapshot"
 
 .PHONY: load
 load:
-	@echo "### Performing initial delta creation"
+	@echo "### Performing initial delta table creation..."
 	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
 	@spark-submit ./transform/load.py \
 		--delta-path $(TABLE_DELTA_PATH) \
@@ -28,14 +28,14 @@ load:
 
 .PHONY: changes
 changes:
-	@echo "### Applying delta table changes"
+	@echo "### Applying delta table changes..."
 	@spark-submit ./transform/changes.py \
 		--delta-path $(TABLE_DELTA_PATH) \
 		--changes-path $(TABLE_CHANGES_PATH)
 
 .PHONY: snapshot
 snapshot:
-	@echo "### Performing point-in-time snapshot"
+	@echo "### Performing delta table point-in-time snapshot..."
 	@spark-submit ./transform/snapshot.py \
 		--delta-path $(TABLE_DELTA_PATH) \
 		--snapshot-path $(TABLE_SNAPSHOT_PATH)

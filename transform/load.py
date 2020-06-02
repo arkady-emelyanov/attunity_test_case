@@ -1,12 +1,14 @@
-import os.path
-import sys
 import argparse
+import os.path
 
+import sys
+from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType
 
-from helpers import get_spark
 from attunity.batch_metadata import get_batch_metadata
+from attunity.constants import DATETIME_FORMAT
 from attunity.mappings import get_schema_type
+from helpers import get_spark
 
 # 0. parse arguments
 arg_parser = argparse.ArgumentParser()
@@ -47,11 +49,25 @@ print(f">>> Loading batch...")
 spark = get_spark()
 txt_files = spark.sparkContext.textFile(",".join(batch.files))
 df = spark.read.json(txt_files, schema=schema)
-df.show(10)
+
+# post-process fields
+print(f">>> Post-processing columns...")
+for col in batch.columns:
+    if col['type'] == "DATETIME":
+        src_field = col['name']
+        tmp_field = f"{col['name']}_parsed"
+        df.withColumn(tmp_field, to_timestamp(src_field, DATETIME_FORMAT)) \
+            .drop(src_field) \
+            .withColumnRenamed(tmp_field, src_field)
+
+df.show(10, False)
 
 # 5. creating a table
 print(f">>> Writing delta table to: {cmd_args.delta_path}...")
-df.write.format("delta").save(cmd_args.delta_path)
+df.write \
+    .format("delta") \
+    .mode("overwrite") \
+    .save(cmd_args.delta_path)
 
 # 6. done
 print(">>> Done!")

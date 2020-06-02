@@ -4,7 +4,7 @@ from pyspark.sql.types import *
 TYPE_MAPPINGS = {
     "INT4": IntegerType,
     "INT8": LongType,
-    "DATETIME": TimestampType,
+    "DATETIME": StringType,
     "STRING": StringType,
     "WSTRING": StringType,
     "BOOLEAN": BooleanType,
