@@ -6,7 +6,7 @@ spark = get_spark()
 # 1. load delta table
 print(f"Load delta table from {cmd_args.delta_path}...")
 df = spark.read.format("delta").load(cmd_args.delta_path)
-df.show(10, False)
+df.show(10)
 
 # 2. export to parquet
 print(f"Storing snapshot in {cmd_args.snapshot_path}...")
