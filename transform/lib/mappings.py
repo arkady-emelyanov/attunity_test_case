@@ -1,6 +1,6 @@
 from pyspark.sql.types import *
 
-# Attunity SQL Server schema mappings
+# SQL Server schema mappings
 TYPE_MAPPINGS = {
     "INT4": IntegerType,
     "INT8": LongType,

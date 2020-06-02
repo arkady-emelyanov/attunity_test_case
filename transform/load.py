@@ -1,13 +1,13 @@
 import argparse
+import sys
 import os.path
 
-import sys
 from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType
 
-from attunity.batch_metadata import get_batch_metadata
-from attunity.constants import DATETIME_FORMAT
-from attunity.mappings import get_schema_type
+from lib.constants import DATETIME_FORMAT
+from lib.mappings import get_schema_type
+from lib.batch_metadata import get_batch_metadata
 from helpers import get_spark
 
 # 0. parse arguments
