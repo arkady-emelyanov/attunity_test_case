@@ -1,5 +1,3 @@
-import argparse
-
 from lib.helpers import get_spark, get_args
 
 cmd_args = get_args()
