@@ -32,12 +32,18 @@ if not batch.files:
 # 3. define schema
 print(">>> Setting up DataFrame schema...")
 schema = StructType()
+schema_without_metadata = StructType()
 metadata_columns = []
 
 for col in batch.columns:
-    schema.add(col['name'], get_schema_type(col['type']))
+    col_type = get_schema_type(col['type'])
+    col_name = col['name']
+    
+    schema.add(col_name, col_type)
     if col['name'].startswith(CHANGES_METADATA_FIELD_PREFIX):
         metadata_columns.append(col['name'])
+    else:
+        schema_without_metadata.add(col_name, col_type)
 
 # 4. load batch
 print(f">>> Loading batch and filter out no-op CDC events...")
@@ -84,7 +90,12 @@ print(f">>> Collected {latest_changes_df.count()} changes after compaction")
 
 # 6. Load delta table
 print(f">>> Loading delta table from {cmd_args.delta_path}...")
-delta_table = get_delta_table(spark, cmd_args.delta_path)
+delta_table = get_delta_table(
+    spark=spark,
+    schema=schema_without_metadata,
+    delta_library_jar=cmd_args.delta_library_jar,
+    delta_path=cmd_args.delta_path,
+)
 
 # 7. Apply changes
 # @see: https://docs.delta.io/latest/delta-update.html#write-change-data-into-a-delta-table
