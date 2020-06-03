@@ -15,7 +15,7 @@ if not dfm_files:
     print(">>> Nothing to-do, exiting...")
     sys.exit(0)
 
-# get batch and validate columns
+# Get batch metadata and validate columns
 print(f">>> Found {len(dfm_files)} batch metadata files, loading metadata...")
 batch = get_batch_metadata(
     dfm_files=dfm_files,
