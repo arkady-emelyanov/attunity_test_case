@@ -1,13 +1,25 @@
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType
 
+from .constants import DATETIME_FORMAT
+
+
+def process_special_fields(batch, df):
+    for col in batch.columns:
+        if col['type'] == "DATETIME":
+            src_field = col['name']
+            tmp_field = f"{col['name']}_parsed"
+            df.withColumn(tmp_field, to_timestamp(src_field, DATETIME_FORMAT)) \
+                .drop(src_field) \
+                .withColumnRenamed(tmp_field, src_field)
+    return df
 
 def get_delta_table(
         spark: SparkSession,
         schema: StructType,
         delta_library_jar: str,
         delta_path: str):
-
     # load delta library jar, so we can use delta module
     spark.sparkContext.addPyFile(delta_library_jar)
     from delta.tables import DeltaTable

@@ -4,7 +4,28 @@
 import json
 import os
 
+from pyspark.sql.types import *
 from typing import List
+
+from .constants import CHANGES_METADATA_FIELD_PREFIX
+
+# SQL Server schema mappings
+TYPE_MAPPINGS = {
+    "BOOLEAN": BooleanType,
+    "INT4": IntegerType,
+    "INT8": LongType,
+    "DATETIME": StringType,
+    "STRING": StringType,
+    "WSTRING": StringType,
+    "BYTES": StringType,
+    "NCLOB": StringType,
+}
+
+
+def get_schema_type(source_type: str) -> DataType:
+    if source_type not in TYPE_MAPPINGS:
+        raise Exception(f"Unknown mapping '{source_type}'")
+    return TYPE_MAPPINGS.get(source_type)()
 
 
 class BatchMetadata:
@@ -13,7 +34,15 @@ class BatchMetadata:
         self.files = files
         self.record_count = record_count
         self.primary_key_columns = []
+
+        # schema related fields
+        self.schema_batch = StructType()
+        self.schema_table = StructType()
+        self.metadata_columns = []
+
+        # initialize
         self._set_primary_key_columns()
+        self._generate_schema()
 
     def _set_primary_key_columns(self):
         for col in self.columns:
@@ -21,6 +50,34 @@ class BatchMetadata:
             if primary_key_pos > 0:
                 self.primary_key_columns.append(col)
         self.primary_key_columns.sort(key=lambda x: int(col['primaryKeyPos']))
+
+    def _generate_schema(self):
+        for col in self.columns:
+            col_type = get_schema_type(col['type'])
+            col_name = col['name']
+            is_nullable = int(col['primaryKeyPos']) > 0
+
+            self.schema_batch.add(
+                col_name,
+                col_type,
+                nullable=is_nullable
+            )
+            if col['name'].startswith(CHANGES_METADATA_FIELD_PREFIX):
+                self.metadata_columns.append(col['name'])
+            else:
+                self.schema_table.add(
+                    col_name,
+                    col_type,
+                    nullable=is_nullable
+                )
+
+    def columns_without_pkey(self) -> List[str]:
+        res = []
+        for col in self.columns:
+            name = col['name']
+            if name not in self.metadata_columns and name not in self.primary_key_columns:
+                res.append(col['name'])
+        return res
 
 
 def get_metadata_file_list(search_path: str, prefix: str = "") -> List[str]:

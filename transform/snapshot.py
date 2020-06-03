@@ -4,14 +4,14 @@ from lib.spark import get_spark
 cmd_args = get_args()
 spark = get_spark()
 
-# 1. load delta table
+# Load delta table
 print(f"Load delta table from {cmd_args.delta_path}...")
 df = spark \
     .read \
     .format("delta") \
     .load(cmd_args.delta_path)
 
-# 2. export to parquet snapshot
+# Export to parquet snapshot
 snapshot_partitions = 1
 if cmd_args.snapshot_partitions:
     snapshot_partitions = int(cmd_args.snapshot_partitions)
