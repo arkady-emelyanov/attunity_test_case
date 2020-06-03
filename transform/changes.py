@@ -3,7 +3,7 @@ from pyspark.sql.functions import max as sql_max
 from pyspark.sql.types import StructType
 
 from lib.args import get_args
-from lib.constants import CHANGES_METADATA_FIELD_PREFIX, CHANGES_METADATA_OPERATION
+from lib.constants import CHANGES_METADATA_FIELD_PREFIX, CHANGES_METADATA_OPERATION, CHANGES_METADATA_TIMESTAMP
 from lib.mappings import get_schema_type
 from lib.metadata import get_batch_metadata, get_metadata_file_list
 from lib.spark import get_spark
@@ -38,25 +38,25 @@ metadata_columns = []
 for col in batch.columns:
     col_type = get_schema_type(col['type'])
     col_name = col['name']
-    
-    schema.add(col_name, col_type)
+
+    schema.add(field=col_name, data_type=col_type, nullable=True)
     if col['name'].startswith(CHANGES_METADATA_FIELD_PREFIX):
         metadata_columns.append(col['name'])
     else:
-        schema_without_metadata.add(col_name, col_type)
+        schema_without_metadata.add(col_name, col_type, nullable=True)
 
 # 4. load batch
-print(f">>> Loading batch and filter out no-op CDC events...")
+print(f">>> Loading batch...")
 spark = get_spark()
+
 txt_files = spark.sparkContext.textFile(",".join(batch.files))
 batch_df = spark.read.json(txt_files, schema=schema)
-batch_df = batch_df.filter(
-    (batch_df[CHANGES_METADATA_OPERATION] == "U") |
-    (batch_df[CHANGES_METADATA_OPERATION] == "I") |
-    (batch_df[CHANGES_METADATA_OPERATION] == "D")
-).orderBy(batch_df['header__timestamp'].asc())
+print(f">>> Collected: {batch_df.count()} changes before operation filtering...")
 
-print(f">>> Collected {batch_df.count()} changes before compaction")
+batch_df = batch_df \
+    .filter(batch_df[CHANGES_METADATA_OPERATION].isin(["I", "U", "D"])) \
+    .orderBy(batch_df[CHANGES_METADATA_TIMESTAMP].asc())
+print(f">>> Collected: {batch_df.count()} changes after operation filtering...")
 
 # 5. Transform Qlik changes into DeltaLake expected changes
 print(f">>> Transforming collected changes into DeltaLake compatible DataFrame...")
@@ -85,8 +85,7 @@ latest_changes_df = batch_df \
     .agg(sql_max("payload_cols").alias("latest")) \
     .selectExpr(pkey, "latest.*") \
     .drop(*metadata_columns)
-
-print(f">>> Collected {latest_changes_df.count()} changes after compaction")
+print(f">>> Collected: {latest_changes_df.count()} after changes compaction...")
 
 # 6. Load delta table
 print(f">>> Loading delta table from {cmd_args.delta_path}...")

@@ -2,13 +2,14 @@ from pyspark.sql.types import *
 
 # SQL Server schema mappings
 TYPE_MAPPINGS = {
+    "BOOLEAN": BooleanType,
     "INT4": IntegerType,
     "INT8": LongType,
     "DATETIME": StringType,
     "STRING": StringType,
     "WSTRING": StringType,
-    "BOOLEAN": BooleanType,
-    "BYTES": BinaryType,
+    "BYTES": StringType,
+    "NCLOB": StringType,
 }
 
 
