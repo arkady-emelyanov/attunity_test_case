@@ -1,5 +1,6 @@
 from lib.args import get_args
 from lib.spark import get_spark
+from lib.table import calculate_partitions
 
 cmd_args = get_args()
 spark = get_spark()
@@ -13,10 +14,9 @@ df = spark \
 
 
 # Export to parquet snapshot
-# TODO: calculate number of partitions based on dataset size
-partitions = 1
-
+partitions = calculate_partitions(spark=spark, df=df)
 print(f">>> Storing snapshot: {cmd_args.snapshot_path}, with {partitions} partitions...")
+
 df.repartition(partitions) \
     .write \
     .mode("overwrite") \

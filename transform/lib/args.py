@@ -8,6 +8,5 @@ def get_args() -> argparse.Namespace:
     arg_parser.add_argument("-c", "--changes-path", required=True, help="Table changes path")
     arg_parser.add_argument("-s", "--snapshot-path", required=True, help="Table snapshot path")
     arg_parser.add_argument("-d", "--delta-path", required=True, help="Delta table path")
-    arg_parser.add_argument("-p", "--snapshot-partitions", required=False, help="Number of partitions for snapshot")
     cmd_args, _ = arg_parser.parse_known_args()
     return cmd_args

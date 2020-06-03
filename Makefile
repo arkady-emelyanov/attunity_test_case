@@ -1,12 +1,16 @@
 ## attunity story
+.PHONY: all
+all:
+	@echo "Nothing to-do"
+
 .PHONY: mssql
 mssql:
-	docker exec -it mssql /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '1234abc7643Z'
+	@docker exec -it mssql /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P '1234abc7643Z'
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/producer.exe ./producer/main.go
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/postprocess.exe ./post-processing/main.go
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/producer.exe ./producer/main.go
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/postprocess.exe ./post-processing/main.go
 
 ## spark story
 TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
@@ -56,5 +60,14 @@ snapshot:
 		--delta-path $(TABLE_DELTA_PATH) \
 		--load-path $(TABLE_LOAD_PATH) \
 		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH) \
-		--snapshot-partitions 1
+		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+
+.PHONY: vacuum
+vacuum:
+	@echo "### Performing vacuum..."
+	@spark-submit ./transform/vacuum.py \
+		--delta-library-jar $(DELTA_LIBRARY_JAR) \
+		--delta-path $(TABLE_DELTA_PATH) \
+		--load-path $(TABLE_LOAD_PATH) \
+		--changes-path $(TABLE_CHANGES_PATH) \
+		--snapshot-path $(TABLE_SNAPSHOT_PATH)

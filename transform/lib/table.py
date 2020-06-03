@@ -1,10 +1,27 @@
+import math
+
 from pyspark.sql import DataFrame
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import to_timestamp
+from pyspark.sql.functions import to_timestamp, length
 from pyspark.sql.types import StructType
 
-from .constants import DATETIME_FORMAT
+from .constants import DATETIME_FORMAT, PARTITION_MAX_SIZE
 from .metadata import BatchMetadata
+
+
+def calculate_partitions(spark: SparkSession, df: DataFrame) -> int:
+    total_rows = df.count()
+    row_df = spark.createDataFrame(df.head(5))
+    row_df = row_df.select(*[length(c) for c in row_df.columns]).groupBy().sum()
+    row_df = row_df.withColumn(
+        'total',
+        sum(row_df[c] for c in row_df.columns)
+    )
+    row_size = row_df.select('total').collect()[0][0]
+    if row_size == 0:
+        row_size = 1
+
+    return int(math.ceil((total_rows * row_size) / PARTITION_MAX_SIZE))
 
 
 def process_special_fields(batch: BatchMetadata, df: DataFrame) -> DataFrame:

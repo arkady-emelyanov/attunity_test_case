@@ -5,7 +5,7 @@ from lib.args import get_args
 from lib.constants import CHANGES_METADATA_OPERATION, CHANGES_METADATA_TIMESTAMP
 from lib.metadata import get_batch_metadata, get_metadata_file_list
 from lib.spark import get_spark
-from lib.table import get_delta_table, process_special_fields
+from lib.table import get_delta_table, process_special_fields, calculate_partitions
 
 cmd_args = get_args()
 spark = get_spark()
@@ -76,10 +76,6 @@ delta_table = get_delta_table(
     delta_path=cmd_args.delta_path,
 )
 
-# Apply changes
-# @see: https://docs.delta.io/latest/delta-update.html#write-change-data-into-a-delta-table
-print(f">>> Applying changes to target delta table...")
-
 # grab only meaning columns, skip the rest
 value_map = {}
 for col in batch.columns:
@@ -88,7 +84,9 @@ for col in batch.columns:
         src = f"s.{dst}"
         value_map[dst] = src
 
-# apply changes back to delta table
+# Apply changes
+# @see: https://docs.delta.io/latest/delta-update.html#write-change-data-into-a-delta-table
+print(f">>> Applying changes to target delta table...")
 delta_table \
     .alias("t") \
     .merge(latest_changes_df.alias("s"), f"s.{pkey} = t.{pkey}") \

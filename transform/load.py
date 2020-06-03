@@ -3,7 +3,7 @@ import sys
 from lib.args import get_args
 from lib.metadata import get_batch_metadata, get_metadata_file_list
 from lib.spark import get_spark
-from lib.table import process_special_fields
+from lib.table import process_special_fields, calculate_partitions
 
 cmd_args = get_args()
 spark = get_spark()
@@ -33,12 +33,10 @@ df = spark.read.json(txt_files, schema=batch.schema_batch)
 # post-process fields
 print(f">>> Post-processing columns...")
 df = process_special_fields(batch, df)
-
-# TODO: calculate number of partitions based on dataset size
-partitions = 1
+partitions = calculate_partitions(spark=spark, df=df)
 
 # creating a table
-print(f">>> Writing initial delta table to: {cmd_args.delta_path}...")
+print(f">>> Writing initial delta table {cmd_args.delta_path} with {partitions} partitions...")
 df.repartition(partitions) \
     .write \
     .mode("overwrite") \
