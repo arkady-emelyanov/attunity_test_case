@@ -50,6 +50,7 @@ class BatchMetadata:
             if primary_key_pos > 0:
                 self.primary_key_columns.append(col)
         self.primary_key_columns.sort(key=lambda x: int(col['primaryKeyPos']))
+        self.primary_key_columns = [x['name'] for x in self.primary_key_columns]
 
     def _generate_schema(self):
         for col in self.columns:
@@ -76,7 +77,7 @@ class BatchMetadata:
         for col in self.columns:
             name = col['name']
             if name not in self.metadata_columns and name not in self.primary_key_columns:
-                res.append(col['name'])
+                res.append(name)
         return res
 
 

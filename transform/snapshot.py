@@ -11,6 +11,8 @@ df = spark \
     .format("delta") \
     .load(cmd_args.delta_path)
 
+# TODO: calculate number of partitions based on dataset size
+
 # Export to parquet snapshot
 snapshot_partitions = 1
 if cmd_args.snapshot_partitions:

@@ -50,7 +50,7 @@ if len(batch.primary_key_columns) == 0:
     raise Exception("Batches without primary keys are not supported!")
 
 # Translate changes
-pkey = batch.primary_key_columns[0]['name']
+pkey = batch.primary_key_columns[0]
 cols = ",\n".join(batch.columns_without_pkey())
 payload_cols = f'''
     struct(

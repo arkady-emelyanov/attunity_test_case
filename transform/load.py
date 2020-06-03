@@ -34,6 +34,8 @@ df = spark.read.json(txt_files, schema=batch.schema_batch)
 print(f">>> Post-processing columns...")
 df = process_special_fields(batch, df)
 
+# TODO: calculate number of partitions based on dataset size
+
 # creating a table
 print(f">>> Writing delta table to: {cmd_args.delta_path}...")
 df.write \
