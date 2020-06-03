@@ -14,8 +14,8 @@ DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
 DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.jar"
 
 ## working on single table
-#TABLE_NAME := "dbo.WRKFLW_INSTNC"
-TABLE_NAME := "dbo.test_changing_load"
+TABLE_NAME := "dbo.WRKFLW_INSTNC"
+#TABLE_NAME := "dbo.test_changing_load"
 #TABLE_NAME := "dbo.test_bulk_load"
 #TABLE_NAME := "dbo.WRKFLW_EVNT"
 TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)"

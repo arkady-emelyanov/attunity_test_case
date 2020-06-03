@@ -35,10 +35,13 @@ print(f">>> Post-processing columns...")
 df = process_special_fields(batch, df)
 
 # TODO: calculate number of partitions based on dataset size
+partitions = 1
 
 # creating a table
-print(f">>> Writing delta table to: {cmd_args.delta_path}...")
-df.write \
+print(f">>> Writing initial delta table to: {cmd_args.delta_path}...")
+df.repartition(partitions) \
+    .write \
+    .mode("overwrite") \
     .format("delta") \
     .save(cmd_args.delta_path)
 

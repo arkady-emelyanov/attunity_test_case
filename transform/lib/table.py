@@ -1,11 +1,14 @@
+from pyspark.sql import DataFrame
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import to_timestamp
 from pyspark.sql.types import StructType
 
 from .constants import DATETIME_FORMAT
+from .metadata import BatchMetadata
 
 
-def process_special_fields(batch, df):
+def process_special_fields(batch: BatchMetadata, df: DataFrame) -> DataFrame:
+    # apply post load transformations (e.g. datetime)
     for col in batch.columns:
         if col['type'] == "DATETIME":
             src_field = col['name']
@@ -14,6 +17,7 @@ def process_special_fields(batch, df):
                 .drop(src_field) \
                 .withColumnRenamed(tmp_field, src_field)
     return df
+
 
 def get_delta_table(
         spark: SparkSession,
