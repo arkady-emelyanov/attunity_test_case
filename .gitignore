@@ -1,4 +1,6 @@
 artifacts/*
 !artifacts/.gitkeep
+.env
 run.log
 transform.zip
+dependencies.zip

@@ -1,3 +1,9 @@
+include .env
+export
+
+MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MKFILE_DIR := $(dir $(MKFILE_PATH))
+
 ## attunity story
 .PHONY: all
 all:
@@ -13,35 +19,40 @@ build:
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/postprocess.exe ./post-processing/main.go
 
 ## spark story
-TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
-DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
+#TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
+#DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
+#DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.jar"
+BUCKET := "lineardp-replicate-qlik-poc"
+TABLE_BASE_STORAGE := "advisor"
+DELTA_BASE_STORAGE := "s3a://$(BUCKET)/advisor/__lake"
+SNAPSHOT_BASE_STORAGE := "s3a://$(BUCKET)/advisor/__snapshot"
 DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.jar"
+
 
 ## working on single table
 TABLE_NAME := "dbo.WRKFLW_INSTNC"
-#TABLE_NAME := "dbo.test_schema_change"
-#TABLE_NAME := "dbo.test_changing_load"
-#TABLE_NAME := "dbo.test_bulk_load"
 #TABLE_NAME := "dbo.WRKFLW_EVNT"
+#TABLE_NAME := "dbo.test_changing_load"
+#TABLE_NAME := "dbo.test_schema_change"
+#TABLE_NAME := "dbo.test_bulk_load"
 TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)"
 TABLE_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)__ct"
-TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__delta"
-TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__snapshot"
+TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)"
+TABLE_SNAPSHOT_PATH := "$(SNAPSHOT_BASE_STORAGE)/$(TABLE_NAME)"
 
 .PHONY: clean
 clean:
 	@echo "### Clearing up $(DELTA_BASE_STORAGE)"
-	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
 
 .PHONY: package
 package:
 	@echo "### Packing transformation code"
 	@find . -type d -name '__pycache__' | xargs rm -rf
-	@zip -r transform.zip transform/*
+	@zip -q -r transform.zip transform/*
 
 .PHONY: load
 load: clean package
-	@echo "### Performing initial delta table load..."
+	@echo "### Submitting initial delta table load task..."
 	@spark-submit \
 		--py-files transform.zip \
 		./job_runner.py \
@@ -54,10 +65,11 @@ load: clean package
 
 .PHONY: changes
 changes: package
-	@echo "### Processing incremental delta table changes..."
+	@echo "### Submitting incremental delta table changes task..."
 	@spark-submit \
 		--py-files transform.zip \
 		./job_runner.py \
+			--bucket $(BUCKET) \
 			--task apply_changes_task \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
 			--delta-path $(TABLE_DELTA_PATH) \
@@ -67,10 +79,11 @@ changes: package
 
 .PHONY: snapshot
 snapshot: package
-	@echo "### Performing delta table snapshot..."
+	@echo "### Submitting delta table snapshot task..."
 	@spark-submit \
 		--py-files transform.zip \
 		./job_runner.py \
+			--bucket $(BUCKET) \
 			--task snapshot_task \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
 			--delta-path $(TABLE_DELTA_PATH) \
@@ -84,6 +97,7 @@ vacuum: package
 	@spark-submit \
 		--py-files transform.zip \
 		./job_runner.py \
+			--bucket $(BUCKET) \
 			--task vacuum \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
 			--delta-path $(TABLE_DELTA_PATH) \

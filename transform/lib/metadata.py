@@ -3,6 +3,7 @@
 #
 import json
 import os
+import boto3
 
 from pyspark.sql.types import *
 from typing import List
@@ -84,24 +85,46 @@ class BatchMetadata:
 def get_metadata_file_list(search_path: str, prefix: str = "") -> List[str]:
     dfm_files = []
     suffix = ".dfm"
-    for s in os.listdir(search_path):
-        if prefix and not s.startswith(prefix):
-            print(f"> Prefix is set: {prefix}, but {s} doesn't contain it, skipping...")
-            continue
-        if suffix and not s.endswith(suffix):
-            continue
-        dfm_files.append(os.path.join(search_path, s))
+    if not search_path.endswith("/"):
+        search_path = f"{search_path}/"
+
+    client = boto3.client("s3")
+    paginator = client.get_paginator("list_objects_v2")
+    kwargs = {
+        "Bucket": "lineardp-replicate-qlik-poc",
+        "Prefix": search_path,
+        "Delimiter": "/",
+    }
+
+    for page in paginator.paginate(**kwargs):
+        content = page.get("Contents")
+        if not content:
+            break
+
+        for obj in content:
+            key = obj["Key"]
+            if key.endswith("/"):
+                continue
+
+            file_name = os.path.basename(key)
+            if prefix and not file_name.startswith(prefix):
+                print(f"> Prefix is set: {prefix}, but {key} doesn't contain it, skipping...")
+                continue
+            if suffix and not file_name.endswith(suffix):
+                continue
+            dfm_files.append(key)
     return dfm_files
 
 
-def get_batch_metadata(dfm_files: List[str], src_path_override: str) -> BatchMetadata:
+def get_batch_metadata(dfm_files: List[str], src_path_override: str = "") -> BatchMetadata:
     df_columns = None
     df_files = []
     df_record_count = 0
 
+    s3 = boto3.resource("s3")
     for dfm_file in dfm_files:
-        with open(dfm_file, 'r') as f:
-            obj = json.loads(f.read())
+        obj = s3.Object("lineardp-replicate-qlik-poc", dfm_file)
+        obj = json.loads(obj.get()['Body'].read())
 
         # validate loaded object
         if type(obj) != dict:
@@ -131,14 +154,7 @@ def get_batch_metadata(dfm_files: List[str], src_path_override: str) -> BatchMet
             obj['fileInfo']['extension']
         ])
 
-        # override source path if working with
-        # locally stored data
-        if src_path_override:
-            file_full_path = os.path.join(src_path_override, dfm_file)
-        else:
-            # TODO: append s3 prefix here
-            file_full_path = obj['fileInfo']['location']
-
+        file_full_path = f"s3a://{obj['fileInfo']['location']}/{dfm_file}"
         df_files.append(file_full_path)
 
     return BatchMetadata(

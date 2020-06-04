@@ -16,10 +16,7 @@ def initial_load_task(spark: SparkSession, cmd_args: Namespace):
 
     # Get batch metadata and validate columns
     print(f">>> Found {len(dfm_files)} batch metadata files, loading metadata...")
-    batch = get_batch_metadata(
-        dfm_files=dfm_files,
-        src_path_override=cmd_args.load_path
-    )
+    batch = get_batch_metadata(dfm_files=dfm_files)
     print(f">>> Metadata loaded, num_files={len(batch.files)}, records={batch.record_count}")
     if not batch.files:
         raise Exception("Did not found any files to load..")
