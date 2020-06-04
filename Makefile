@@ -32,42 +32,60 @@ clean:
 	@echo "### Clearing up $(DELTA_BASE_STORAGE)"
 	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
 
+.PHONY: package
+package:
+	@echo "### Packing transformation code"
+	@find . -type d -name '__pycache__' | xargs rm -rf
+	@zip -r transform.zip transform/*
+
 .PHONY: load
-load: clean
+load: clean package
 	@echo "### Performing initial delta table load..."
-	@spark-submit ./transform/load.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--py-files transform.zip \
+		./job_runner.py \
+			--task initial_load_task \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: changes
-changes:
+changes: package
 	@echo "### Processing incremental delta table changes..."
-	@spark-submit ./transform/changes.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--py-files transform.zip \
+		./job_runner.py \
+			--task apply_changes_task \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: snapshot
-snapshot:
+snapshot: package
 	@echo "### Performing delta table snapshot..."
-	@spark-submit ./transform/snapshot.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--py-files transform.zip \
+		./job_runner.py \
+			--task snapshot_task \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: vacuum
-vacuum:
+vacuum: package
 	@echo "### Performing vacuum..."
-	@spark-submit ./transform/vacuum.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--py-files transform.zip \
+		./job_runner.py \
+			--task vacuum \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
