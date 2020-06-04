@@ -19,6 +19,7 @@ DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.ja
 
 ## working on single table
 TABLE_NAME := "dbo.WRKFLW_INSTNC"
+#TABLE_NAME := "dbo.test_schema_change"
 #TABLE_NAME := "dbo.test_changing_load"
 #TABLE_NAME := "dbo.test_bulk_load"
 #TABLE_NAME := "dbo.WRKFLW_EVNT"
