@@ -15,7 +15,7 @@ df = spark \
 
 # Export to parquet snapshot
 partitions = calculate_partitions(spark=spark, df=df)
-print(f">>> Storing snapshot: {cmd_args.snapshot_path}, with {partitions} partitions...")
+print(f">>> Storing snapshot: {cmd_args.snapshot_path}, with {partitions} partition(s)...")
 
 df.repartition(partitions) \
     .write \

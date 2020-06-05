@@ -35,32 +35,38 @@ clean:
 .PHONY: load
 load: clean
 	@echo "### Performing initial delta table load..."
-	@spark-submit ./transform/load.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--master local[*] \
+		./transform/load.py \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: changes
 changes:
 	@echo "### Processing incremental delta table changes..."
-	@spark-submit ./transform/changes.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--master local[*] \
+		./transform/changes.py \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: snapshot
 snapshot:
 	@echo "### Performing delta table snapshot..."
-	@spark-submit ./transform/snapshot.py \
-		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+	@spark-submit \
+		--master local[*] \
+		./transform/snapshot.py \
+			--delta-library-jar $(DELTA_LIBRARY_JAR) \
+			--delta-path $(TABLE_DELTA_PATH) \
+			--load-path $(TABLE_LOAD_PATH) \
+			--changes-path $(TABLE_CHANGES_PATH) \
+			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: vacuum
 vacuum:

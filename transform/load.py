@@ -33,12 +33,10 @@ df = spark.read.json(txt_files, schema=batch.schema_batch)
 # post-process fields
 print(f">>> Post-processing columns...")
 df = process_special_fields(batch, df)
-partitions = calculate_partitions(spark=spark, df=df)
 
 # creating a table
-print(f">>> Writing initial delta table {cmd_args.delta_path} with {partitions} partitions...")
-df.repartition(partitions) \
-    .write \
+print(f">>> Writing initial delta table {cmd_args.delta_path}")
+df.write \
     .mode("overwrite") \
     .format("delta") \
     .save(cmd_args.delta_path)

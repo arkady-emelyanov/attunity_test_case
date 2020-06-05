@@ -12,13 +12,16 @@ from .metadata import BatchMetadata
 def calculate_partitions(spark: SparkSession, df: DataFrame) -> int:
     # super-naive method of dataframe size assumptions
     total_rows = df.count()
+    sample_rows = 5
     row_df = spark.createDataFrame(df.head(5))
     row_df = row_df.select(*[length(c) for c in row_df.columns]).groupBy().sum()
     row_df = row_df.withColumn(
         'total',
         sum(row_df[c] for c in row_df.columns)
     )
-    row_size = row_df.select('total').collect()[0][0]
+
+    row_size = int(row_df.select('total').collect()[0][0])
+    row_size = int(math.ceil(row_size / sample_rows))
     if row_size == 0:
         row_size = 1
 
