@@ -1,6 +1,6 @@
 import sys
-from pyspark.sql.types import TimestampType, BooleanType, StringType
 from pyspark.sql.functions import col, lit
+from pyspark.sql.types import TimestampType, BooleanType, StringType
 
 from lib.args import get_args
 from lib.constants import CHANGES_METADATA_OPERATION, CHANGES_METADATA_TIMESTAMP
@@ -55,12 +55,9 @@ updates_df = batch_df \
     .orderBy(batch_df[CHANGES_METADATA_TIMESTAMP].asc()) \
     .withColumn("_merge_key", col(primary_key))
 
+# TODO: updates must be turned into inserts as well
+
 print(f">>> Collected: UPDATES={updates_df.count()}, INSERTS={inserts_df.count()}")
-# staged_df = inserts_df \
-#     .selectExpr("NULL as _merge_key", "*") \
-#     .union(updates_df.selectExpr(f"{primary_key} as _merge_key", "*"))
-# 
-# staged_df.show(20, False)
 
 scd_schema = batch.schema_table
 scd_schema.add('current', BooleanType(), False)
@@ -105,10 +102,21 @@ scd_delta_table \
 scd_delta_table \
     .alias("t") \
     .merge(updates_df.alias("s"), f"t.{primary_key} = _merge_key") \
-    .whenMatchedUpdate(condition="t.current = true", set={
-        "current": "false",
-        "end_date": "s.header__timestamp",
-    }).execute()
+    .whenMatchedUpdate(condition="t.current = true",
+                       set={
+                           "current": "false",
+                           "end_date": "s.header__timestamp"
+                       }) \
+    .execute()
+
+# TODO: value of update doesn't end up in target table
+scd_delta_table \
+    .alias("t") \
+    .merge(updates_df.alias("s"), "1 = 0") \
+    .whenNotMatchedInsert(values=value_map) \
+    .execute()
+
+# TODO: soft delete
 
 # temp
 scd_delta_table \
