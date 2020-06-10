@@ -109,7 +109,6 @@ scd_delta_table \
                        }) \
     .execute()
 
-# TODO: value of update doesn't end up in target table
 scd_delta_table \
     .alias("t") \
     .merge(updates_df.alias("s"), "1 = 0") \
@@ -117,6 +116,7 @@ scd_delta_table \
     .execute()
 
 # TODO: soft delete
+
 
 # temp
 scd_delta_table \
