@@ -1,5 +1,5 @@
 import sys
-from pyspark.sql.functions import col, lit
+from pyspark.sql.functions import col as sql_col, lit
 from pyspark.sql.types import TimestampType, BooleanType, StringType
 
 from lib.args import get_args
@@ -53,7 +53,7 @@ inserts_df = batch_df \
 updates_df = batch_df \
     .filter(batch_df[CHANGES_METADATA_OPERATION].isin(["U"])) \
     .orderBy(batch_df[CHANGES_METADATA_TIMESTAMP].asc()) \
-    .withColumn("_merge_key", col(primary_key))
+    .withColumn("_merge_key", sql_col(primary_key))
 
 # TODO: updates must be turned into inserts as well
 
@@ -121,6 +121,7 @@ scd_delta_table \
 # temp
 scd_delta_table \
     .toDF() \
+    .sort(sql_col("id")) \
     .show(20, False)
 
 print(">>> Done!")

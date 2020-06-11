@@ -1,5 +1,5 @@
 import sys
-from pyspark.sql.functions import max as sql_max
+from pyspark.sql.functions import max as sql_max, col as sql_col
 
 from lib.args import get_args
 from lib.constants import CHANGES_METADATA_OPERATION, CHANGES_METADATA_TIMESTAMP
@@ -94,5 +94,10 @@ delta_table \
     .whenMatchedUpdate(set=value_map) \
     .whenNotMatchedInsert("s.deleted = false", values=value_map) \
     .execute()
+
+delta_table \
+    .toDF() \
+    .sort(sql_col("id")) \
+    .show(20, False)
 
 print(">>> Done!")
