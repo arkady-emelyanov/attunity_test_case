@@ -65,7 +65,7 @@ changes_scd:
 		./transform/changes_scd.py \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
 			--delta-path $(TABLE_DELTA_PATH) \
-			--delta-sdc-path $(TABLE_DELTA_SDC_PATH) \
+			--delta-scd-path $(TABLE_DELTA_SDC_PATH) \
 			--load-path $(TABLE_LOAD_PATH) \
 			--changes-path $(TABLE_CHANGES_PATH) \
 			--snapshot-path $(TABLE_SNAPSHOT_PATH)
