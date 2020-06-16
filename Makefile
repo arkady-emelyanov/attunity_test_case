@@ -57,9 +57,9 @@ changes:
 			--changes-path $(TABLE_CHANGES_PATH) \
 			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
-.PHONY: changes_sdc
+.PHONY: changes_scd
 changes_sdc:
-	@echo "### Processing incremental delta table changes..."
+	@echo "### Processing SCD delta table changes..."
 	@spark-submit \
 		--master local[*] \
 		./transform/changes_scd.py \

@@ -68,12 +68,12 @@ inserts_df.show(20, False)
 updates_df.show(20, False)
 
 # Load delta table
-print(f">>> Loading SDC Type 2 delta table from {cmd_args.delta_sdc_path}...")
+print(f">>> Loading SDC Type 2 delta table from {cmd_args.delta_scd_path}...")
 scd_delta_table = get_delta_table(
     spark=spark,
     schema=batch.schema_table,
     delta_library_jar=cmd_args.delta_library_jar,
-    delta_path=cmd_args.delta_sdc_path,
+    delta_path=cmd_args.delta_scd_path,
 )
 
 # grab only meaning columns, skip the rest
