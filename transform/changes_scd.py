@@ -64,6 +64,7 @@ print(f">>> U={updates_df.count()}, I={inserts_df.count()}, D={deletes_df.count(
 
 scd_schema = batch.schema_table
 scd_schema.add('current', BooleanType(), False)
+scd_schema.add('deleted', BooleanType(), False)
 scd_schema.add('effective_date', TimestampType(), True)
 scd_schema.add('end_date', TimestampType(), True)
 
@@ -89,9 +90,10 @@ for col in batch.columns:
         value_map[dst] = src
 
 value_map.update({
-    'current': "true",
-    'effective_date': "s.header__timestamp",
-    'end_date': "null",
+    "current": "true",
+    "deleted": "false",
+    "effective_date": "s.header__timestamp",
+    "end_date": "null",
 })
 
 # Apply changes
@@ -131,6 +133,7 @@ scd_delta_table \
     .whenMatchedUpdate(condition="t.current = true",
                        set={
                            "current": "false",
+                           "deleted": "true",
                            "end_date": "s.header__timestamp"
                        }) \
     .execute()
