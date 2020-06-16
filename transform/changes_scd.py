@@ -55,9 +55,12 @@ updates_df = batch_df \
     .orderBy(batch_df[CHANGES_METADATA_TIMESTAMP].asc()) \
     .withColumn("_merge_key", sql_col(primary_key))
 
-# TODO: updates must be turned into inserts as well
+deletes_df = batch_df \
+    .filter(batch_df[CHANGES_METADATA_OPERATION].isin(["D"])) \
+    .orderBy(batch_df[CHANGES_METADATA_TIMESTAMP].asc()) \
+    .withColumn("_merge_key", sql_col(primary_key))
 
-print(f">>> Collected: UPDATES={updates_df.count()}, INSERTS={inserts_df.count()}")
+print(f">>> U={updates_df.count()}, I={inserts_df.count()}, D={deletes_df.count()}")
 
 scd_schema = batch.schema_table
 scd_schema.add('current', BooleanType(), False)
@@ -66,6 +69,7 @@ scd_schema.add('end_date', TimestampType(), True)
 
 inserts_df.show(20, False)
 updates_df.show(20, False)
+deletes_df.show(20, False)
 
 # Load delta table
 print(f">>> Loading SDC Type 2 delta table from {cmd_args.delta_scd_path}...")
@@ -92,13 +96,17 @@ value_map.update({
 
 # Apply changes
 # @see: https://docs.databricks.com/delta/delta-update.html#scd-type-2-using-merge-notebook
+# TODO: refactor into single operation
 print(f">>> Applying changes to target delta table...")
+
+# inserts
 scd_delta_table \
     .alias("t") \
     .merge(inserts_df.alias("s"), f"t.{primary_key} = _merge_key") \
     .whenNotMatchedInsert(values=value_map) \
     .execute()
 
+# updates
 scd_delta_table \
     .alias("t") \
     .merge(updates_df.alias("s"), f"t.{primary_key} = _merge_key") \
@@ -109,16 +117,25 @@ scd_delta_table \
                        }) \
     .execute()
 
+# set current
 scd_delta_table \
     .alias("t") \
     .merge(updates_df.alias("s"), "1 = 0") \
     .whenNotMatchedInsert(values=value_map) \
     .execute()
 
-# TODO: soft delete
+# soft delete
+scd_delta_table \
+    .alias("t") \
+    .merge(deletes_df.alias("s"), f"t.{primary_key} = _merge_key") \
+    .whenMatchedUpdate(condition="t.current = true",
+                       set={
+                           "current": "false",
+                           "end_date": "s.header__timestamp"
+                       }) \
+    .execute()
 
-
-# temp
+# temp, show results
 scd_delta_table \
     .toDF() \
     .sort(sql_col("id")) \
