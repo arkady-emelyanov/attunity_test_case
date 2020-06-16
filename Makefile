@@ -58,7 +58,7 @@ changes:
 			--snapshot-path $(TABLE_SNAPSHOT_PATH)
 
 .PHONY: changes_scd
-changes_sdc:
+changes_scd:
 	@echo "### Processing SCD delta table changes..."
 	@spark-submit \
 		--master local[*] \
