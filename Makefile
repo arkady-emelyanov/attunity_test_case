@@ -96,7 +96,8 @@ delta_vacuum:
 
 HUDI_BASE_STORAGE := "$(TABLE_BASE_STORAGE)/out_hudi"
 
-HUDI_TABLE_NAME := "dbo.TEST"
+#HUDI_TABLE_NAME := "dbo.TEST"
+HUDI_TABLE_NAME := "dbo.test_changing_load"
 HUDI_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(HUDI_TABLE_NAME)"
 HUDI_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(HUDI_TABLE_NAME)__ct"
 HUDI_PATH := "$(HUDI_BASE_STORAGE)/$(HUDI_TABLE_NAME)__hudi"
@@ -108,10 +109,20 @@ hudi_clean:
 
 .PHONY: hudi_load
 hudi_load: hudi_clean
-	@echo "### Performing initial Hudi table load..."
+	@echo "### Performing initial load..."
 	@spark-submit \
 		--master local[*] \
 		./transform/hudi_load.py \
 		--load-path $(HUDI_LOAD_PATH) \
+		--table-name $(HUDI_TABLE_NAME) \
+		--hudi-path $(HUDI_PATH)
+
+.PHONY: hudi_changes
+hudi_changes:
+	@echo "### Processing incremental changes..."
+	@spark-submit \
+		--master local[*] \
+		./transform/hudi_changes.py \
+		--load-path $(HUDI_CHANGES_PATH) \
 		--table-name $(HUDI_TABLE_NAME) \
 		--hudi-path $(HUDI_PATH)
