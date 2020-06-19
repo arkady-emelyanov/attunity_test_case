@@ -14,6 +14,7 @@ TYPE_MAPPINGS = {
     "BOOLEAN": BooleanType,
     "INT4": IntegerType,
     "INT8": LongType,
+    "NUMERIC": LongType,
     "DATETIME": StringType,
     "STRING": StringType,
     "WSTRING": StringType,
@@ -56,12 +57,12 @@ class BatchMetadata:
         for col in self.columns:
             col_type = get_schema_type(col['type'])
             col_name = col['name']
-            is_nullable = int(col['primaryKeyPos']) > 0
+            nullable = int(col['primaryKeyPos']) == 0
 
             self.schema_batch.add(
                 col_name,
                 col_type,
-                nullable=is_nullable
+                nullable=nullable
             )
             if col['name'].startswith(CHANGES_METADATA_FIELD_PREFIX):
                 self.metadata_columns.append(col['name'])
@@ -69,7 +70,7 @@ class BatchMetadata:
                 self.schema_table.add(
                     col_name,
                     col_type,
-                    nullable=is_nullable
+                    nullable=nullable
                 )
 
     def columns_without_pkey(self) -> List[str]:

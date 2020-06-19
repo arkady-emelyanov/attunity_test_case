@@ -1,11 +1,11 @@
 import sys
 
-from lib.args import get_args
+from lib.args import get_hudi_args
 from lib.metadata import get_batch_metadata, get_metadata_file_list
 from lib.spark import get_spark
-from lib.table import process_special_fields, calculate_partitions
+from lib.table import process_special_fields
 
-cmd_args = get_args()
+cmd_args = get_hudi_args()
 spark = get_spark()
 
 # list files, "load" type only
@@ -25,6 +25,12 @@ print(f">>> Metadata loaded, num_files={len(batch.files)}, records={batch.record
 if not batch.files:
     raise Exception("Did not found any files to load..")
 
+if len(batch.primary_key_columns) > 1:
+    raise Exception("Composite primary keys not yet implemented!")
+
+if len(batch.primary_key_columns) == 0:
+    raise Exception("Batches without primary keys are not supported!")
+
 # load batch
 print(f">>> Loading batch...")
 txt_files = spark.sparkContext.textFile(",".join(batch.files))
@@ -35,11 +41,23 @@ print(f">>> Post-processing columns...")
 df = process_special_fields(batch, df)
 
 # creating a table
-print(f">>> Writing initial delta table {cmd_args.delta_path}")
-df.write \
-    .mode("overwrite") \
-    .format("delta") \
-    .save(cmd_args.delta_path)
+print(f">>> Writing to Hudi {cmd_args.hudi_path}")
+pkey = batch.primary_key_columns[0]
 
-# done
-print(">>> Done!")
+# https://hudi.apache.org/docs/configurations.html
+hudi_options = {
+    'hoodie.table.name': cmd_args.table_name,
+    'hoodie.datasource.write.recordkey.field': pkey,
+    'hoodie.datasource.write.partitionpath.field': 'partitionpath',
+    'hoodie.datasource.write.precombine.field': 'crdate',
+    'hoodie.datasource.write.table.name': cmd_args.table_name,
+    'hoodie.datasource.write.operation': 'bulkinsert',
+    'hoodie.upsert.shuffle.parallelism': 2,
+    'hoodie.insert.shuffle.parallelism': 2
+}
+
+df.write \
+    .format("hudi") \
+    .options(**hudi_options) \
+    .mode("overwrite") \
+    .save(cmd_args.hudi_path)

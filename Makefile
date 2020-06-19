@@ -12,82 +12,106 @@ build:
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/producer.exe ./producer/main.go
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/postprocess.exe ./post-processing/main.go
 
-## spark story
+## Common (Delta and Hudi)
 TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
-DELTA_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data/out"
+
+## Delta Lake (delta.io)
+DELTA_BASE_STORAGE := "$(TABLE_BASE_STORAGE)/out_delta"
 DELTA_LIBRARY_JAR := "/Users/arkady/Projects/tools/libs/delta-core_2.11-0.6.1.jar"
 
-## working on single table
-#TABLE_NAME := "dbo.WRKFLW_INSTNC"
-TABLE_NAME := "dbo.test_changing_load"
-#TABLE_NAME := "dbo.test_bulk_load"
-#TABLE_NAME := "dbo.WRKFLW_EVNT"
-TABLE_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)"
-TABLE_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(TABLE_NAME)__ct"
-TABLE_DELTA_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__delta"
-TABLE_DELTA_SDC_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__sdc"
-TABLE_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/$(TABLE_NAME)__snapshot"
+DELTA_TABLE_NAME := "dbo.test_changing_load"
+DELTA_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(DELTA_TABLE_NAME)"
+DELTA_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(DELTA_TABLE_NAME)__ct"
+DELTA_PATH := "$(DELTA_BASE_STORAGE)/$(DELTA_TABLE_NAME)__delta"
+DELTA_SDC_PATH := "$(DELTA_BASE_STORAGE)/$(DELTA_TABLE_NAME)__sdc"
+DELTA_SNAPSHOT_PATH := "$(DELTA_BASE_STORAGE)/$(DELTA_TABLE_NAME)__snapshot"
 
-.PHONY: clean
-clean:
+.PHONY: delta_clean
+delta_clean:
 	@echo "### Clearing up $(DELTA_BASE_STORAGE)"
 	@rm -rf $(DELTA_BASE_STORAGE) && mkdir -p $(DELTA_BASE_STORAGE)
 
-.PHONY: load
-load: clean
+.PHONY: delta_load
+delta_load: delta_clean
 	@echo "### Performing initial delta table load..."
 	@spark-submit \
 		--master local[*] \
-		./transform/load.py \
+		./transform/delta_load.py \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
-			--delta-path $(TABLE_DELTA_PATH) \
-			--load-path $(TABLE_LOAD_PATH) \
-			--changes-path $(TABLE_CHANGES_PATH) \
-			--snapshot-path $(TABLE_SNAPSHOT_PATH)
+			--delta-path $(DELTA_PATH) \
+			--load-path $(DELTA_LOAD_PATH) \
+			--changes-path $(DELTA_CHANGES_PATH) \
+			--snapshot-path $(DELTA_SNAPSHOT_PATH)
 
-.PHONY: changes
-changes:
+.PHONY: delta_changes
+delta_changes:
 	@echo "### Processing incremental delta table changes..."
 	@spark-submit \
 		--master local[*] \
-		./transform/changes.py \
+		./transform/delta_changes.py \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
-			--delta-path $(TABLE_DELTA_PATH) \
-			--load-path $(TABLE_LOAD_PATH) \
-			--changes-path $(TABLE_CHANGES_PATH) \
-			--snapshot-path $(TABLE_SNAPSHOT_PATH)
+			--delta-path $(DELTA_PATH) \
+			--load-path $(DELTA_LOAD_PATH) \
+			--changes-path $(DELTA_CHANGES_PATH) \
+			--snapshot-path $(DELTA_SNAPSHOT_PATH)
 
-.PHONY: changes_scd
-changes_scd:
+.PHONY: delta_changes_scd
+delta_changes_scd:
 	@echo "### Processing SCD delta table changes..."
 	@spark-submit \
 		--master local[*] \
-		./transform/changes_scd.py \
+		./transform/delta_changes_scd.py \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
-			--delta-path $(TABLE_DELTA_PATH) \
-			--delta-scd-path $(TABLE_DELTA_SDC_PATH) \
-			--load-path $(TABLE_LOAD_PATH) \
-			--changes-path $(TABLE_CHANGES_PATH) \
-			--snapshot-path $(TABLE_SNAPSHOT_PATH)
+			--delta-path $(DELTA_PATH) \
+			--delta-scd-path $(DELTA_SDC_PATH) \
+			--load-path $(DELTA_LOAD_PATH) \
+			--changes-path $(DELTA_CHANGES_PATH) \
+			--snapshot-path $(DELTA_SNAPSHOT_PATH)
 
-.PHONY: snapshot
-snapshot:
+.PHONY: delta_snapshot
+delta_snapshot:
 	@echo "### Performing delta table snapshot..."
 	@spark-submit \
 		--master local[*] \
-		./transform/snapshot.py \
+		./transform/delta_snapshot.py \
 			--delta-library-jar $(DELTA_LIBRARY_JAR) \
-			--delta-path $(TABLE_DELTA_PATH) \
-			--load-path $(TABLE_LOAD_PATH) \
-			--changes-path $(TABLE_CHANGES_PATH) \
-			--snapshot-path $(TABLE_SNAPSHOT_PATH)
+			--delta-path $(DELTA_PATH) \
+			--load-path $(DELTA_LOAD_PATH) \
+			--changes-path $(DELTA_CHANGES_PATH) \
+			--snapshot-path $(DELTA_SNAPSHOT_PATH)
 
-.PHONY: vacuum
-vacuum:
+.PHONY: delta_vacuum
+delta_vacuum:
 	@echo "### Performing vacuum..."
-	@spark-submit ./transform/vacuum.py \
+	@spark-submit \
+		--master local[*] \
+		./transform/delta_vacuum.py \
 		--delta-library-jar $(DELTA_LIBRARY_JAR) \
-		--delta-path $(TABLE_DELTA_PATH) \
-		--load-path $(TABLE_LOAD_PATH) \
-		--changes-path $(TABLE_CHANGES_PATH) \
-		--snapshot-path $(TABLE_SNAPSHOT_PATH)
+		--delta-path $(DELTA_PATH) \
+		--load-path $(DELTA_LOAD_PATH) \
+		--changes-path $(DELTA_CHANGES_PATH) \
+		--snapshot-path $(DELTA_SNAPSHOT_PATH)
+
+## Apache Hudi
+
+HUDI_BASE_STORAGE := "$(TABLE_BASE_STORAGE)/out_hudi"
+
+HUDI_TABLE_NAME := "dbo.TEST"
+HUDI_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(HUDI_TABLE_NAME)"
+HUDI_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(HUDI_TABLE_NAME)__ct"
+HUDI_PATH := "$(HUDI_BASE_STORAGE)/$(HUDI_TABLE_NAME)__hudi"
+
+.PHONY: hudi_clean
+hudi_clean:
+	@echo "### Clearing up $(HUDI_BASE_STORAGE)"
+	@rm -rf $(HUDI_BASE_STORAGE) && mkdir -p $(HUDI_BASE_STORAGE)
+
+.PHONY: hudi_load
+hudi_load: hudi_clean
+	@echo "### Performing initial Hudi table load..."
+	@spark-submit \
+		--master local[*] \
+		./transform/hudi_load.py \
+		--load-path $(HUDI_LOAD_PATH) \
+		--table-name $(HUDI_TABLE_NAME) \
+		--hudi-path $(HUDI_PATH)
