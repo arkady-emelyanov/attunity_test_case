@@ -1,7 +1,7 @@
 from lib.args import get_hudi_args
 from lib.spark import get_spark
 from lib.table import calculate_partitions
-from lib.constants import CHANGES_METADATA_FIELD_PREFIX
+from lib.constants import CHANGES_METADATA_FIELD_PREFIX, HUDI_METADATA_FIELD_PREFIX
 
 cmd_args = get_hudi_args()
 spark = get_spark()
@@ -13,9 +13,11 @@ df = spark \
     .format("hudi") \
     .load(f"{cmd_args.hudi_path}/*")
 
-# Filter Qlik metadata fields
-df = df \
-    .select([c for c in df.columns if not c.startswith(CHANGES_METADATA_FIELD_PREFIX)])
+# Filter out Qlik and Hudi metadata fields
+drop_columns = []
+drop_columns.extend([c for c in df.columns if c.startswith(CHANGES_METADATA_FIELD_PREFIX)])
+drop_columns.extend([c for c in df.columns if c.startswith(HUDI_METADATA_FIELD_PREFIX)])
+df = df.drop(*drop_columns)
 
 # Export to parquet snapshot
 partitions = calculate_partitions(spark=spark, df=df)
