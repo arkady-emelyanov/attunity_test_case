@@ -18,5 +18,6 @@ def get_hudi_args() -> argparse.Namespace:
     arg_parser.add_argument("-l", "--load-path", required=True, help="Table load path")
     arg_parser.add_argument("-p", "--hudi-path", required=True, help="Hudi storage path")
     arg_parser.add_argument("-t", "--table-name", required=True, help="Hudi table name")
+    arg_parser.add_argument("-s", "--snapshot-path", required=True, help="Table snapshot path")
     cmd_args, _ = arg_parser.parse_known_args()
     return cmd_args

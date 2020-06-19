@@ -101,6 +101,7 @@ HUDI_TABLE_NAME := "dbo.test_changing_load"
 HUDI_LOAD_PATH := "$(TABLE_BASE_STORAGE)/$(HUDI_TABLE_NAME)"
 HUDI_CHANGES_PATH := "$(TABLE_BASE_STORAGE)/$(HUDI_TABLE_NAME)__ct"
 HUDI_PATH := "$(HUDI_BASE_STORAGE)/$(HUDI_TABLE_NAME)__hudi"
+HUDI_SNAPSHOT_PATH := "$(HUDI_BASE_STORAGE)/$(HUDI_TABLE_NAME)__snapshot"
 
 .PHONY: hudi_clean
 hudi_clean:
@@ -115,7 +116,8 @@ hudi_load: hudi_clean
 		./transform/hudi_load.py \
 		--load-path $(HUDI_LOAD_PATH) \
 		--table-name $(HUDI_TABLE_NAME) \
-		--hudi-path $(HUDI_PATH)
+		--hudi-path $(HUDI_PATH) \
+		--snapshot-path $(HUDI_SNAPSHOT_PATH)
 
 .PHONY: hudi_changes
 hudi_changes:
@@ -125,4 +127,16 @@ hudi_changes:
 		./transform/hudi_changes.py \
 		--load-path $(HUDI_CHANGES_PATH) \
 		--table-name $(HUDI_TABLE_NAME) \
-		--hudi-path $(HUDI_PATH)
+		--hudi-path $(HUDI_PATH) \
+		--snapshot-path $(HUDI_SNAPSHOT_PATH)
+
+.PHONY: hudi_snapshot
+hudi_snapshot:
+	@echo "### Exporting snapshot..."
+	@spark-submit \
+		--master local[*] \
+		./transform/hudi_snapshot.py \
+		--load-path $(HUDI_CHANGES_PATH) \
+		--table-name $(HUDI_TABLE_NAME) \
+		--hudi-path $(HUDI_PATH) \
+		--snapshot-path $(HUDI_SNAPSHOT_PATH)
