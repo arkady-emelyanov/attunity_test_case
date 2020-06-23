@@ -5,6 +5,7 @@ from lib.constants import CHANGES_METADATA_OPERATION, CHANGES_METADATA_TIMESTAMP
 from lib.metadata import get_batch_metadata, get_metadata_file_list
 from lib.spark import get_spark
 from lib.table import process_special_fields
+from lib.hudi_helpers import get_operation_options
 
 cmd_args = get_hudi_args()
 spark = get_spark()
@@ -59,36 +60,26 @@ deletes_df.show(20)
 print(f">>> Writing to Hudi {cmd_args.hudi_path}")
 pkey = batch.primary_key_columns[0]
 
-# https://hudi.apache.org/docs/configurations.html
-hudi_upsert_options = {
+# process upserts
+hudi_upsert_options = get_operation_options({
     'hoodie.table.name': cmd_args.table_name,
     'hoodie.datasource.write.recordkey.field': pkey,
-    'hoodie.datasource.write.partitionpath.field': 'partitionpath',
     'hoodie.datasource.write.precombine.field': CHANGES_METADATA_TIMESTAMP,
-    'hoodie.datasource.write.table.name': cmd_args.table_name,
     'hoodie.datasource.write.operation': 'upsert',
-    'hoodie.upsert.shuffle.parallelism': 2,
-    'hoodie.insert.shuffle.parallelism': 2
-}
-
-hudi_delete_options = {
-    'hoodie.table.name': cmd_args.table_name,
-    'hoodie.datasource.write.recordkey.field': pkey,
-    'hoodie.datasource.write.partitionpath.field': 'partitionpath',
-    'hoodie.datasource.write.precombine.field': CHANGES_METADATA_TIMESTAMP,
-    'hoodie.datasource.write.table.name': cmd_args.table_name,
-    'hoodie.datasource.write.operation': 'delete',
-    'hoodie.upsert.shuffle.parallelism': 2,
-    'hoodie.insert.shuffle.parallelism': 2
-}
-
-
+})
 upserts_df.write \
     .format("hudi") \
     .options(**hudi_upsert_options) \
     .mode("append") \
     .save(cmd_args.hudi_path)
 
+# process deletes
+hudi_delete_options = get_operation_options({
+    'hoodie.table.name': cmd_args.table_name,
+    'hoodie.datasource.write.recordkey.field': pkey,
+    'hoodie.datasource.write.precombine.field': CHANGES_METADATA_TIMESTAMP,
+    'hoodie.datasource.write.operation': 'delete',
+})
 deletes_df.write \
     .format("hudi") \
     .options(**hudi_delete_options) \

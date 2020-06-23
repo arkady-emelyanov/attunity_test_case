@@ -4,6 +4,7 @@ from lib.args import get_hudi_args
 from lib.metadata import get_batch_metadata, get_metadata_file_list
 from lib.spark import get_spark
 from lib.table import process_special_fields
+from lib.hudi_helpers import get_operation_options
 
 cmd_args = get_hudi_args()
 spark = get_spark()
@@ -34,29 +35,23 @@ if len(batch.primary_key_columns) == 0:
 # load batch
 print(f">>> Loading batch...")
 txt_files = spark.sparkContext.textFile(",".join(batch.files))
-df = spark.read.json(txt_files, schema=batch.schema_batch)
+batch_df = spark.read.json(txt_files, schema=batch.schema_batch)
 
 # post-process fields
 print(f">>> Post-processing columns...")
-df = process_special_fields(batch, df)
+batch_df = process_special_fields(batch, batch_df)
 
 # creating a table
 print(f">>> Writing to Hudi {cmd_args.hudi_path}")
 pkey = batch.primary_key_columns[0]
 
-# https://hudi.apache.org/docs/configurations.html
-hudi_options = {
+hudi_options = get_operation_options({
     'hoodie.table.name': cmd_args.table_name,
     'hoodie.datasource.write.recordkey.field': pkey,
-    'hoodie.datasource.write.partitionpath.field': 'partitionpath',
     'hoodie.datasource.write.precombine.field': 'crdate',
-    'hoodie.datasource.write.table.name': cmd_args.table_name,
     'hoodie.datasource.write.operation': 'bulkinsert',
-    'hoodie.upsert.shuffle.parallelism': 2,
-    'hoodie.insert.shuffle.parallelism': 2
-}
-
-df.write \
+})
+batch_df.write \
     .format("hudi") \
     .options(**hudi_options) \
     .mode("overwrite") \
