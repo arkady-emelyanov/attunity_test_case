@@ -60,7 +60,7 @@ print(f">>> Writing to Hudi {cmd_args.hudi_path}")
 pkey = batch.primary_key_columns[0]
 
 # https://hudi.apache.org/docs/configurations.html
-hudi_options = {
+hudi_upsert_options = {
     'hoodie.table.name': cmd_args.table_name,
     'hoodie.datasource.write.recordkey.field': pkey,
     'hoodie.datasource.write.partitionpath.field': 'partitionpath',
@@ -71,8 +71,26 @@ hudi_options = {
     'hoodie.insert.shuffle.parallelism': 2
 }
 
+hudi_delete_options = {
+    'hoodie.table.name': cmd_args.table_name,
+    'hoodie.datasource.write.recordkey.field': pkey,
+    'hoodie.datasource.write.partitionpath.field': 'partitionpath',
+    'hoodie.datasource.write.precombine.field': CHANGES_METADATA_TIMESTAMP,
+    'hoodie.datasource.write.table.name': cmd_args.table_name,
+    'hoodie.datasource.write.operation': 'delete',
+    'hoodie.upsert.shuffle.parallelism': 2,
+    'hoodie.insert.shuffle.parallelism': 2
+}
+
+
 upserts_df.write \
     .format("hudi") \
-    .options(**hudi_options) \
+    .options(**hudi_upsert_options) \
+    .mode("append") \
+    .save(cmd_args.hudi_path)
+
+deletes_df.write \
+    .format("hudi") \
+    .options(**hudi_delete_options) \
     .mode("append") \
     .save(cmd_args.hudi_path)
