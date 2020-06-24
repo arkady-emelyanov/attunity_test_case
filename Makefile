@@ -130,6 +130,17 @@ hudi_changes:
 		--hudi-path $(HUDI_PATH) \
 		--snapshot-path $(HUDI_SNAPSHOT_PATH)
 
+.PHONY: hudi_changes_scd
+hudi_changes_scd:
+	@echo "### Processing SCD Type changes..."
+	@spark-submit \
+		--master local[*] \
+		./transform/hudi_changes_scd.py \
+		--load-path $(HUDI_CHANGES_PATH) \
+		--table-name $(HUDI_TABLE_NAME) \
+		--hudi-path $(HUDI_PATH) \
+		--snapshot-path $(HUDI_SNAPSHOT_PATH)
+
 .PHONY: hudi_snapshot
 hudi_snapshot:
 	@echo "### Exporting snapshot..."
