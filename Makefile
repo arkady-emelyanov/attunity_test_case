@@ -13,7 +13,7 @@ build:
 	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o ./artifacts/postprocess.exe ./post-processing/main.go
 
 ## Common (Delta and Hudi)
-TABLE_BASE_STORAGE := "/Users/arkady/Projects/disney/spark_data"
+TABLE_BASE_STORAGE := "/Users/arkady/Projects/cdc/spark_data"
 
 ## Delta Lake (delta.io)
 DELTA_BASE_STORAGE := "$(TABLE_BASE_STORAGE)/out_delta"
