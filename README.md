@@ -1,11 +1,15 @@
-# Attunity test case: S3
+# Qlik Replicate (Attunity) CDC: S3
 
-Number of test cases for Attunity Replicate.
-* Change Data Capture, S3 dump
-* Transformations (table level: parquet)
-* Transformations (join level: parquet)
+Number of test cases for Qlick Replicate.
+* Change Data Capture -> S3 target
+* CDC transform (table level: parquet)
+* CDC transform (join level: parquet)
 
 ## CDC
+
+* Apache Spark 2.4.6
+* Delta Lake 0.6.1
+* Apache Hudi 0.5.3
 
 ### Initial Load
 
@@ -55,7 +59,6 @@ and how data will be represented on S3
 into Parquet file
 
 ### Physical layer
-
 
 ### Join layer
 
